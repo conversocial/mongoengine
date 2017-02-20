@@ -106,8 +106,6 @@ def get_connection(alias=DEFAULT_CONNECTION_NAME, reconnect=False):
                 conn_settings['slaves'] = slaves
                 conn_settings.pop('read_preference')
 
-        if 'replicaSet' in conn_settings:
-            conn_settings['hosts_or_uri'] = conn_settings.pop('host', None)
         try:
             _connections[alias] = MongoClient(**conn_settings)
         except Exception, e:
