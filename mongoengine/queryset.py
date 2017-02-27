@@ -498,7 +498,7 @@ class QuerySet(object):
             if self._read_preference:
                 collection = collection.with_options(
                     read_preference=self._read_preference)
-                
+
             self._cursor_obj = collection.find(
                 self._query, **self._cursor_args)
 
@@ -511,6 +511,7 @@ class QuerySet(object):
                 self._cursor_obj.sort(self._ordering)
             elif self._document._meta['ordering']:
                 self.order_by(*self._document._meta['ordering'])
+                self._cursor_obj.sort(self._ordering)
 
             if self._limit is not None:
                 self._cursor_obj.limit(self._limit)
