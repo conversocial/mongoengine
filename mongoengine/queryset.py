@@ -972,6 +972,12 @@ class QuerySet(object):
 
         :param n: the maximum number of objects to return
         """
+        if self._cursor_obj is not None:
+            if n == 0:
+                self._cursor_obj.limit(1)
+            else:
+                self._cursor_obj.limit(n)
+
         self._limit = n
 
         # Return self to allow chaining
@@ -983,6 +989,9 @@ class QuerySet(object):
 
         :param n: the number of objects to skip before returning results
         """
+        if self._cursor_obj is not None and n:
+            self._cursor_obj.skip(n)
+
         self._skip = n
         return self
 
@@ -999,6 +1008,9 @@ class QuerySet(object):
 
         .. versionadded:: 0.5
         """
+        if self._cursor_obj is not None:
+            self._cursor_obj.hint(index)
+
         self._hint = index
         return self
 
