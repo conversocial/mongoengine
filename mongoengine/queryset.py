@@ -1022,6 +1022,8 @@ class QuerySet(object):
             try:
                 self._cursor_obj = self._cursor[key]
                 self._skip, self._limit = key.start, key.stop
+                if key.start and key.stop:
+                    self._limit = key.stop - key.start
             except IndexError, err:
                 # PyMongo raises an error if key.start == key.stop, catch it,
                 # bin it, kill it.
@@ -1665,10 +1667,10 @@ class QuerySet(object):
         if self._limit is None:
             stop = start + limit
         if self._limit is not None:
-            if self._limit - start > limit:
+            if self._limit > limit:
                 stop = start + limit
             else:
-                stop = self._limit
+                stop = start + self._limit
         try:
             data = list(self[start:stop])
         except pymongo.errors.InvalidOperation:
