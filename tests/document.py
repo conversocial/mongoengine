@@ -2279,5 +2279,45 @@ class DocumentTest(unittest.TestCase):
                                         }
                                     ) ]), "1,2")
 
+
+    def test_document_equality(self):
+        class A(Document):
+            name = StringField()
+
+        class B(Document):
+            name = StringField()
+
+        class SomethingElse(object):
+            def __init__(self, id, name):
+                self.id = id
+                self.name = name
+
+        a = A(id=1, name="BOOK")
+        a_ = A(id=1, name="BOOK")
+        b = B(id=1, name="BOOK")
+        somethingElse = SomethingElse(id=1, name="BOOK")
+
+        # ensure __eq__ returns NotImplemented
+        self.assertEqual(a.__eq__(a_), True)
+        self.assertEqual(a.__eq__(b), NotImplemented)
+        self.assertEqual(a.__eq__(somethingElse), NotImplemented)
+
+        # test equality
+        self.assertTrue(a == a_)
+        self.assertFalse(a == b)
+        self.assertFalse(a == somethingElse)
+
+        # test __ne__ returns NotImplemented
+        self.assertEqual(a.__ne__(a_), False)
+        self.assertEqual(a.__ne__(b), NotImplemented)
+        self.assertEqual(a.__ne__(somethingElse), NotImplemented)
+
+        # test not equal
+        self.assertFalse(a != a_)
+        self.assertTrue(a != b)
+        self.assertTrue(a != somethingElse)
+
+
+
 if __name__ == '__main__':
     unittest.main()
