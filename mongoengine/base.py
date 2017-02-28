@@ -1143,12 +1143,14 @@ class BaseDocument(object):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__) and hasattr(other, 'id'):
-            if self.id == other.id:
-                return True
-        return False
+            return self.id == other.id
+        return NotImplemented
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        res = self.__eq__(other)
+        if res == NotImplemented:
+            return NotImplemented
+        return not res
 
     def __hash__(self):
         if self.pk is None:
