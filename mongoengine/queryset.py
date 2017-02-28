@@ -498,7 +498,7 @@ class QuerySet(object):
             if self._read_preference:
                 collection = collection.with_options(
                     read_preference=self._read_preference)
-                
+
             self._cursor_obj = collection.find(
                 self._query, **self._cursor_args)
 
@@ -511,6 +511,7 @@ class QuerySet(object):
                 self._cursor_obj.sort(self._ordering)
             elif self._document._meta['ordering']:
                 self.order_by(*self._document._meta['ordering'])
+                self._cursor_obj.sort(self._ordering)
 
             if self._limit is not None:
                 self._cursor_obj.limit(self._limit)
@@ -971,6 +972,12 @@ class QuerySet(object):
 
         :param n: the maximum number of objects to return
         """
+        if self._cursor_obj is not None:
+            if n == 0:
+                self._cursor_obj.limit(1)
+            else:
+                self._cursor_obj.limit(n)
+
         self._limit = n
 
         # Return self to allow chaining
@@ -982,6 +989,9 @@ class QuerySet(object):
 
         :param n: the number of objects to skip before returning results
         """
+        if self._cursor_obj is not None and n:
+            self._cursor_obj.skip(n)
+
         self._skip = n
         return self
 
@@ -998,6 +1008,9 @@ class QuerySet(object):
 
         .. versionadded:: 0.5
         """
+        if self._cursor_obj is not None:
+            self._cursor_obj.hint(index)
+
         self._hint = index
         return self
 
@@ -1009,6 +1022,8 @@ class QuerySet(object):
             try:
                 self._cursor_obj = self._cursor[key]
                 self._skip, self._limit = key.start, key.stop
+                if key.start and key.stop:
+                    self._limit = key.stop - key.start
             except IndexError, err:
                 # PyMongo raises an error if key.start == key.stop, catch it,
                 # bin it, kill it.
@@ -1652,10 +1667,10 @@ class QuerySet(object):
         if self._limit is None:
             stop = start + limit
         if self._limit is not None:
-            if self._limit - start > limit:
+            if self._limit > limit:
                 stop = start + limit
             else:
-                stop = self._limit
+                stop = start + self._limit
         try:
             data = list(self[start:stop])
         except pymongo.errors.InvalidOperation:

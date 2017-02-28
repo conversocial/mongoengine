@@ -2497,6 +2497,46 @@ class QuerySetTest(unittest.TestCase):
 
         Number.drop_collection()
 
+    def test_modify_evaluated_query_with_limit(self):
+        class Number(Document):
+            n = IntField()
+
+        Number.drop_collection()
+
+        for i in xrange(1, 101):
+            t = Number(n=i)
+            t.save()
+
+        test = Number.objects
+        self.assertEqual(test.count(), 100)
+
+        test = test.filter(n__gt=11)
+        self.assertEqual(test.count(), 89)
+
+        test = test.limit(10)
+        self.assertEqual(test.count(), 10)
+
+        Number.drop_collection()
+
+    def test_modify_evaulated_query_with_skip(self):
+        class Number(Document):
+            n = IntField()
+
+        Number.drop_collection()
+
+        for i in xrange(1, 101):
+            t = Number(n=i)
+            t.save()
+
+        test = Number.objects
+
+        self.assertEqual(test[0].n, 1)
+
+        test.skip(5)
+        self.assertEqual(test[0].n, 6)
+
+        Number.drop_collection()
+
     def test_unset_reference(self):
         class Comment(Document):
             text = StringField()
