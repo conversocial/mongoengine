@@ -2892,6 +2892,64 @@ class QuerySetTest(unittest.TestCase):
         pks = self.Person.objects.order_by('age').scalar('pk')[1:3]
         self.assertEqual("[u'A1', u'A2']",  "%s" % sorted(self.Person.objects.scalar('name').in_bulk(list(pks)).values()))
 
+    def test_batch_size(self):
+        """Ensure that batch_size works."""
+        class A(Document):
+            s = StringField()
+
+        A.drop_collection()
+
+        for i in range(100):
+            A.objects.create(s=str(i))
+
+        # test iterating over the result set
+        cnt = 0
+        for a in A.objects.batch_size(10):
+            cnt += 1
+        self.assertEqual(cnt, 100)
+
+        # test chaining
+        qs = A.objects.all()
+        qs = qs.limit(10).batch_size(20).skip(91)
+        cnt = 0
+        for a in qs:
+            cnt += 1
+        self.assertEqual(cnt, 9)
+
+        # test chaining and iteration with small batch size
+        qs = A.objects.all()
+        qs = qs.limit(10).batch_size(4).skip(91)
+        cnt = 0
+        for a in qs:
+            cnt += 1
+        self.assertEqual(cnt, 9)
+
+        # test invalid batch size
+        qs = A.objects.batch_size(-1)
+        with self.assertRaises(ValueError):
+            list(qs)
+
+    def test_modify_evaluated_query_with_batch_size(self):
+        class Number(Document):
+            n = IntField()
+
+        Number.drop_collection()
+
+        for i in xrange(1, 101):
+            t = Number(n=i)
+            t.save()
+
+        test = Number.objects
+        self.assertEqual(test.count(), 100)
+
+        test = test.filter(n__gt=11)
+        self.assertEqual(test.count(), 89)
+
+        test = test.batch_size(10)
+        self.assertEqual(len(list(test)), 89)
+
+        Number.drop_collection()
+
 
 class QTest(unittest.TestCase):
 
