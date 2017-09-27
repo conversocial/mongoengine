@@ -351,6 +351,7 @@ class QuerySet(object):
         self._limit = None
         self._skip = None
         self._hint = -1  # Using -1 as None is a valid value for hint
+        self._batch_size = None
 
     def clone(self):
         """Creates a copy of the current :class:`~mongoengine.queryset.QuerySet`
@@ -361,7 +362,7 @@ class QuerySet(object):
 
         copy_props = ('_initial_query', '_query_obj', '_where_clause',
                     '_loaded_fields', '_ordering',
-                    '_limit', '_skip',  '_hint',
+                    '_limit', '_skip',  '_hint', '_batch_size',
                     '_read_preference',)
 
         for prop in copy_props:
@@ -521,6 +522,9 @@ class QuerySet(object):
 
             if self._hint != -1:
                 self._cursor_obj.hint(self._hint)
+
+            if self._batch_size is not None:
+                self._cursor_obj.batch_size(self._batch_size)
 
         return self._cursor_obj
 
@@ -1012,6 +1016,21 @@ class QuerySet(object):
             self._cursor_obj.hint(index)
 
         self._hint = index
+        return self
+
+    def batch_size(self, size):
+        """Limit the number of documents returned in a single batch (each batch
+        requires a round trip to the server).
+
+
+        See http://api.mongodb.com/python/current/api/pymongo/cursor.html#pymongo.cursor.Cursor.batch_size
+        for details.
+        :param size: desired size of each batch.
+        """
+        if self._cursor_obj is not None:
+            self._cursor_obj.batch_size(size)
+
+        self._batch_size = size
         return self
 
     def __getitem__(self, key):
