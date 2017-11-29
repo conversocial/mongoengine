@@ -474,7 +474,7 @@ class DocumentTest(unittest.TestCase):
             date = DateTimeField(default=datetime.now)
             meta = {
                 'max_documents': 10,
-                'max_size': 90000,
+                'max_size': 25600,
             }
 
         Log.drop_collection()
@@ -492,7 +492,7 @@ class DocumentTest(unittest.TestCase):
         options = Log.objects._collection.options()
         self.assertEqual(options['capped'], True)
         self.assertEqual(options['max'], 10)
-        self.assertEqual(options['size'], 90000)
+        self.assertEqual(options['size'], 25600)  # Must be multiple of 256
 
         # Check that the document cannot be redefined with different options
         def recreate_log_document():
@@ -507,17 +507,13 @@ class DocumentTest(unittest.TestCase):
 
         Log.drop_collection()
 
-    def test_hint(self):
+    def test_can_hint_without_breaking_the_query(self):
 
         class BlogPost(Document):
             tags = ListField(StringField())
-            meta = {
-                'indexes': [
-                    'tags',
-                ],
-            }
 
         BlogPost.drop_collection()
+        BlogPost.objects._collection.ensure_index([('tags', pymongo.ASCENDING)])
 
         for i in xrange(0, 10):
             tags = [("tag %i" % n) for n in xrange(0, i % 2)]
@@ -525,17 +521,24 @@ class DocumentTest(unittest.TestCase):
 
         self.assertEquals(BlogPost.objects.count(), 10)
         self.assertEquals(BlogPost.objects.hint().count(), 10)
-        self.assertEquals(BlogPost.objects.hint([('tags', 1)]).count(), 10)
+        self.assertEquals(
+            BlogPost.objects.hint([('tags', pymongo.ASCENDING)]).count(),
+            10)
 
-        self.assertEquals(BlogPost.objects.hint([('ZZ', 1)]).count(), 10)
+    def test_hint_without_index_will_raise(self):
 
-        def invalid_index():
-            list(BlogPost.objects.hint('tags'))
-        self.assertRaises(pymongo.errors.OperationFailure, invalid_index)
+        class BlogPost(Document):
+            tags = ListField(StringField())
 
-        def invalid_index_2():
-            return list(BlogPost.objects.hint([('tags', 1)]))
-        self.assertRaises(pymongo.errors.OperationFailure, invalid_index_2)
+        BlogPost.drop_collection()
+        BlogPost.objects._collection.ensure_index([('tags', pymongo.ASCENDING)])
+
+        for i in xrange(0, 10):
+            tags = [("tag %i" % n) for n in xrange(0, i % 2)]
+            BlogPost(tags=tags).save()
+
+        with self.assertRaises(pymongo.errors.OperationFailure):
+            self.assertEquals(BlogPost.objects.hint([('ZZ', 1)]).count(), 10)
 
     def test_custom_id_field(self):
         """Ensure that documents may be created with custom primary keys.

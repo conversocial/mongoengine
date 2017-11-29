@@ -230,3 +230,7 @@ class SignalTests(unittest.TestCase):
         ])
 
         self.Author.objects.delete()
+
+
+if __name__ == '__main__':
+    unittest.main()
