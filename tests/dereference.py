@@ -659,3 +659,7 @@ class FieldTest(unittest.TestCase):
         room = Room.objects.first().select_related()
         self.assertEquals(room.staffs_with_position[0]['staff'], sarah)
         self.assertEquals(room.staffs_with_position[1]['staff'], bob)
+
+
+if __name__ == '__main__':
+    unittest.main()

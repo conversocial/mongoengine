@@ -468,3 +468,7 @@ class DynamicDocTest(unittest.TestCase):
         self.assertEquals(doc._get_changed_fields(), ['dict_field.embedded.string_field'])
         self.assertEquals(doc._delta(), ({'dict_field.embedded.string_field': 'Hello World'}, {}))
 
+
+if __name__ == '__main__':
+    unittest.main()
+

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+from distutils.version import StrictVersion
 
 from mongoengine import *
 from mongoengine.connection import register_db
@@ -10,11 +11,28 @@ from django.http import Http404
 from django.template import Context, Template
 from django.conf import settings
 from django.core.paginator import Paginator
+from django import get_version
 
-settings.configure()
+if StrictVersion(get_version()) > StrictVersion('1.6'):
+    from django.core.wsgi import get_wsgi_application
+
+    TEMPLATES = [
+        {
+            'BACKEND': 'django.template.backends.django.DjangoTemplates',
+            'DIRS': [],
+            'APP_DIRS': True,
+            'OPTIONS': {
+                # ... some options here ...
+            },
+        },
+    ]
+    settings.configure(TEMPLATES=TEMPLATES)
+    get_wsgi_application()
+else:
+    settings.configure()
+
 
 class QuerySetTest(unittest.TestCase):
-
     def setUp(self):
         connect()
         register_db('mongoenginetest')
@@ -90,3 +108,7 @@ class QuerySetTest(unittest.TestCase):
             end = p * 2
             start = end - 1
             self.assertEqual(t.render(Context(d)), u'%d:%d:' % (start, end))
+
+
+if __name__ == '__main__':
+    unittest.main()
