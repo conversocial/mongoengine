@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from mongoengine import *
 from mongoengine.connection import get_db, register_db
-from mongoengine.base import _document_registry, NotRegistered
+from mongoengine.base import _document_registry
 
 TEST_IMAGE_PATH = os.path.join(os.path.dirname(__file__), 'mongoengine.png')
 
@@ -104,7 +104,7 @@ class FieldTest(unittest.TestCase):
         doc.save()
 
         collection = self.db[HandleNoneFields._get_collection_name()]
-        obj = collection.update({"_id": doc.id}, {"$unset": {
+        collection.update({"_id": doc.id}, {"$unset": {
             "str_fld": 1,
             "int_fld": 1,
             "flt_fld": 1,
@@ -312,7 +312,7 @@ class FieldTest(unittest.TestCase):
 
         LogEntry.drop_collection()
 
-        # Post UTC - microseconds are rounded (down) nearest millisecond and dropped
+        # Post UTC - microseconds are rounded (down) nearest millisecond
         d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 999)
         d2 = datetime.datetime(1970, 01, 01, 00, 00, 01)
         log = LogEntry()
@@ -352,7 +352,8 @@ class FieldTest(unittest.TestCase):
 
         LogEntry.drop_collection()
 
-        # Post UTC - microseconds are rounded (down) nearest millisecond and dropped - with default datetimefields
+        # Post UTC - microseconds are rounded (down) nearest millisecond and
+        # dropped - with default datetimefields
         d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 999)
         log = LogEntry()
         log.date = d1
@@ -360,14 +361,16 @@ class FieldTest(unittest.TestCase):
         log.reload()
         self.assertEquals(log.date, d1)
 
-        # Post UTC - microseconds are rounded (down) nearest millisecond - with default datetimefields
+        # Post UTC - microseconds are rounded (down) nearest millisecond -
+        # with default datetimefields
         d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 9999)
         log.date = d1
         log.save()
         log.reload()
         self.assertEquals(log.date, d1)
 
-        # Pre UTC dates microseconds below 1000 are dropped - with default datetimefields
+        # Pre UTC dates microseconds below 1000 are dropped -
+        # with default datetimefields
         d1 = datetime.datetime(1969, 12, 31, 23, 59, 59, 999)
         log.date = d1
         log.save()
@@ -592,12 +595,20 @@ class FieldTest(unittest.TestCase):
         post.save()
 
         self.assertEquals(BlogPost.objects.count(), 3)
-        self.assertEquals(BlogPost.objects.filter(info__exact='test').count(), 1)
-        self.assertEquals(BlogPost.objects.filter(info__0__test='test').count(), 1)
+        self.assertEquals(
+            BlogPost.objects.filter(info__exact='test').count(),
+            1)
+        self.assertEquals(
+            BlogPost.objects.filter(info__0__test='test').count(),
+            1)
 
         # Confirm handles non strings or non existing keys
-        self.assertEquals(BlogPost.objects.filter(info__0__test__exact='5').count(), 0)
-        self.assertEquals(BlogPost.objects.filter(info__100__test__exact='test').count(), 0)
+        self.assertEquals(
+            BlogPost.objects.filter(info__0__test__exact='5').count(),
+            0)
+        self.assertEquals(
+            BlogPost.objects.filter(info__100__test__exact='test').count(),
+            0)
         BlogPost.drop_collection()
 
     def test_list_field_passed_in_value(self):
@@ -614,9 +625,9 @@ class FieldTest(unittest.TestCase):
         foo.bars.append(bar)
         self.assertEquals(repr(foo.bars), '[<Bar: Bar object>]')
 
-
     def test_list_field_strict(self):
-        """Ensure that list field handles validation if provided a strict field type."""
+        """Ensure that list field handles validation if provided a
+        strict field type."""
 
         class Simple(Document):
             mapping = ListField(field=IntField())
@@ -687,28 +698,47 @@ class FieldTest(unittest.TestCase):
         e = Simple()
         e.mapping.append(StringSetting(value='foo'))
         e.mapping.append(IntegerSetting(value=42))
-        e.mapping.append({'number': 1, 'string': 'Hi!', 'float': 1.001,
-                          'complex': IntegerSetting(value=42), 'list':
-                          [IntegerSetting(value=42), StringSetting(value='foo')]})
+        e.mapping.append(
+            {'number': 1,
+             'string': 'Hi!',
+             'float': 1.001,
+             'complex': IntegerSetting(value=42),
+             'list': [IntegerSetting(value=42), StringSetting(value='foo')]})
         e.save()
 
-        e2 = Simple.objects.get(id=e.id)
+        Simple.objects.get(id=e.id)
 
         # Test querying
-        self.assertEquals(Simple.objects.filter(mapping__1__value=42).count(), 1)
-        self.assertEquals(Simple.objects.filter(mapping__2__number=1).count(), 1)
-        self.assertEquals(Simple.objects.filter(mapping__2__complex__value=42).count(), 1)
-        self.assertEquals(Simple.objects.filter(mapping__2__list__0__value=42).count(), 1)
-        self.assertEquals(Simple.objects.filter(mapping__2__list__1__value='foo').count(), 1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__1__value=42).count(),
+            1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__2__number=1).count(),
+            1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__2__complex__value=42).count(),
+            1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__2__list__0__value=42).count(),
+            1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__2__list__1__value='foo').count(),
+            1)
 
         # Confirm can update
         Simple.objects().update(set__mapping__1=IntegerSetting(value=10))
-        self.assertEquals(Simple.objects.filter(mapping__1__value=10).count(), 1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__1__value=10).count(),
+            1)
 
         Simple.objects().update(
             set__mapping__2__list__1=StringSetting(value='Boo'))
-        self.assertEquals(Simple.objects.filter(mapping__2__list__1__value='foo').count(), 0)
-        self.assertEquals(Simple.objects.filter(mapping__2__list__1__value='Boo').count(), 1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__2__list__1__value='foo').count(),
+            0)
+        self.assertEquals(
+            Simple.objects.filter(mapping__2__list__1__value='Boo').count(),
+            1)
 
         Simple.drop_collection()
 
@@ -748,12 +778,20 @@ class FieldTest(unittest.TestCase):
         post.save()
 
         self.assertEquals(BlogPost.objects.count(), 3)
-        self.assertEquals(BlogPost.objects.filter(info__title__exact='test').count(), 1)
-        self.assertEquals(BlogPost.objects.filter(info__details__test__exact='test').count(), 1)
+        self.assertEquals(
+            BlogPost.objects.filter(info__title__exact='test').count(),
+            1)
+        self.assertEquals(
+            BlogPost.objects.filter(info__details__test__exact='test').count(),
+            1)
 
         # Confirm handles non strings or non existing keys
-        self.assertEquals(BlogPost.objects.filter(info__details__test__exact=5).count(), 0)
-        self.assertEquals(BlogPost.objects.filter(info__made_up__test__exact='test').count(), 0)
+        self.assertEquals(
+            BlogPost.objects.filter(info__details__test__exact=5).count(),
+            0)
+        self.assertEquals(
+            BlogPost.objects.filter(info__made_up__test__exact='test').count(),
+            0)
 
         post = BlogPost.objects.create(info={'title': 'original'})
         post.info.update({'title': 'updated'})
@@ -764,7 +802,8 @@ class FieldTest(unittest.TestCase):
         BlogPost.drop_collection()
 
     def test_dictfield_strict(self):
-        """Ensure that dict field handles validation if provided a strict field type."""
+        """Ensure that dict field handles validation if provided a strict
+        field type."""
 
         class Simple(Document):
             mapping = DictField(field=IntField())
@@ -802,27 +841,49 @@ class FieldTest(unittest.TestCase):
         e = Simple()
         e.mapping['somestring'] = StringSetting(value='foo')
         e.mapping['someint'] = IntegerSetting(value=42)
-        e.mapping['nested_dict'] = {'number': 1, 'string': 'Hi!', 'float': 1.001,
-                                 'complex': IntegerSetting(value=42), 'list':
-                                [IntegerSetting(value=42), StringSetting(value='foo')]}
+        e.mapping['nested_dict'] = {
+            'number': 1,
+            'string': 'Hi!',
+            'float': 1.001,
+            'complex': IntegerSetting(value=42),
+            'list': [IntegerSetting(value=42), StringSetting(value='foo')]}
         e.save()
 
-        e2 = Simple.objects.get(id=e.id)
+        Simple.objects.get(id=e.id)
 
         # Test querying
-        self.assertEquals(Simple.objects.filter(mapping__someint__value=42).count(), 1)
-        self.assertEquals(Simple.objects.filter(mapping__nested_dict__number=1).count(), 1)
-        self.assertEquals(Simple.objects.filter(mapping__nested_dict__complex__value=42).count(), 1)
-        self.assertEquals(Simple.objects.filter(mapping__nested_dict__list__0__value=42).count(), 1)
-        self.assertEquals(Simple.objects.filter(mapping__nested_dict__list__1__value='foo').count(), 1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__someint__value=42).count(),
+            1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__nested_dict__number=1).count(),
+            1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__nested_dict__complex__value=42)
+                          .count(),
+            1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__nested_dict__list__0__value=42)
+                          .count(),
+            1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__nested_dict__list__1__value='foo')
+                          .count(),
+            1)
 
         # Confirm can update
         Simple.objects().update(
             set__mapping={"someint": IntegerSetting(value=10)})
         Simple.objects().update(
             set__mapping__nested_dict__list__1=StringSetting(value='Boo'))
-        self.assertEquals(Simple.objects.filter(mapping__nested_dict__list__1__value='foo').count(), 0)
-        self.assertEquals(Simple.objects.filter(mapping__nested_dict__list__1__value='Boo').count(), 1)
+        self.assertEquals(
+            Simple.objects.filter(mapping__nested_dict__list__1__value='foo') \
+                          .count(),
+            0)
+        self.assertEquals(
+            Simple.objects.filter(mapping__nested_dict__list__1__value='Boo') \
+                          .count(),
+            1)
 
         Simple.drop_collection()
 
@@ -994,8 +1055,7 @@ class FieldTest(unittest.TestCase):
         group = Group(members=[user1, user2])
         group.save()
 
-        group_obj = Group.objects.first()
-
+        Group.objects.first()
         User.drop_collection()
         Group.drop_collection()
 
@@ -1427,7 +1487,7 @@ class FieldTest(unittest.TestCase):
         self.assertTrue(putfile == result)
         self.assertEquals(result.file.read(), text)
         self.assertEquals(result.file.content_type, content_type)
-        result.file.delete() # Remove file from GridFS
+        result.file.delete()  # Remove file from GridFS
 
         streamfile = StreamFile()
         streamfile.file.new_file(content_type=content_type)
@@ -1449,7 +1509,7 @@ class FieldTest(unittest.TestCase):
         result.file.delete()
 
         # Ensure deleted file returns None
-        self.assertTrue(result.file.read() == None)
+        self.assertTrue(result.file.read() is None)
 
         setfile = SetFile()
         setfile.file = text
@@ -1475,6 +1535,7 @@ class FieldTest(unittest.TestCase):
         # Make sure FileField is optional and not required
         class DemoFile(Document):
             file = FileField()
+
         DemoFile.objects.create()
 
     def test_file_uniqueness(self):
@@ -1492,7 +1553,7 @@ class FieldTest(unittest.TestCase):
 
         # Second instance
         testfiledupe = TestFile()
-        data = testfiledupe.file.read() # Should be None
+        data = testfiledupe.file.read()  # Should be None
 
         self.assertTrue(testfile.name != testfiledupe.name)
         self.assertTrue(testfile.file.read() != data)
@@ -1574,7 +1635,6 @@ class FieldTest(unittest.TestCase):
         self.assertEquals(t.image.thumbnail.height, 18)
 
         t.image.delete()
-
 
     def test_file_multidb(self):
         connect()

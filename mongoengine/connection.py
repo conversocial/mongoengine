@@ -32,8 +32,7 @@ def register_connection(alias, host='localhost', port=27017,
     :param name: the name of the specific database to use
     :param host: the host name of the :program:`mongod` instance to connect to
     :param port: the port that the :program:`mongod` instance is running on
-    :param is_slave: whether the connection can act as a slave ** Depreciated pymongo 2.0.1+
-    :param read_preference: The read preference for the collection ** Added pymongo 2.1
+    :param read_preference: The read preference for the collection
     :param slaves: a list of aliases of slave connections; each of these must
         be a registered connection that has :attr:`is_slave` set to ``True``
     :param username: username to authenticate with
@@ -109,7 +108,8 @@ def get_connection(alias=DEFAULT_CONNECTION_NAME, reconnect=False):
         try:
             _connections[alias] = MongoClient(**conn_settings)
         except Exception, e:
-            raise ConnectionError("Cannot connect to database %s :\n%s" % (alias, e))
+            raise ConnectionError(
+                "Cannot connect to database %s :\n%s" % (alias, e))
     return _connections[alias]
 
 
@@ -125,6 +125,7 @@ def register_db(
         'connection_alias': connection_alias,
         'db_name': db_name,
     }
+
 
 def get_db(alias=DEFAULT_DB_ALIAS, reconnect=False, refresh=False):
     global _dbs

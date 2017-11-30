@@ -155,7 +155,9 @@ class FieldTest(unittest.TestCase):
         daughter.relations.append(self_rel)
         daughter.save()
 
-        self.assertEquals("[<Person: Mother>, <Person: Daughter>]", "%s" % Person.objects())
+        self.assertEquals(
+            "[<Person: Mother>, <Person: Daughter>]",
+            "%s" % Person.objects())
 
     def test_circular_reference_on_self(self):
         """Ensure you can handle circular references
@@ -181,7 +183,9 @@ class FieldTest(unittest.TestCase):
         daughter.relations.append(daughter)
         daughter.save()
 
-        self.assertEquals("[<Person: Mother>, <Person: Daughter>]", "%s" % Person.objects())
+        self.assertEquals(
+            "[<Person: Mother>, <Person: Daughter>]",
+            "%s" % Person.objects())
 
     def test_circular_tree_reference(self):
         """Ensure you can handle circular references with more than one level
@@ -224,9 +228,8 @@ class FieldTest(unittest.TestCase):
         anna.save()
 
         self.assertEquals(
-            "[<Person: Paul>, <Person: Maria>, <Person: Julia>, <Person: Anna>]",
-            "%s" % Person.objects()
-        )
+            "[<Person: Paul>, <Person: Maria>, <Person: Julia>, <Person: Anna>]",  # noqa
+            "%s" % Person.objects())
 
     def test_generic_reference(self):
 
@@ -276,14 +279,14 @@ class FieldTest(unittest.TestCase):
         with query_counter() as q:
             self.assertEqual(q, 0)
 
-            group_obj = Group.objects.first().select_related()
+            Group.objects.first().select_related()
             self.assertEqual(q, 4)
 
         # Queryset select_related
         with query_counter() as q:
             self.assertEqual(q, 0)
 
-            group_objs = Group.objects.select_related()
+            Group.objects.select_related()
             self.assertEqual(q, 4)
 
         UserA.drop_collection()
@@ -339,14 +342,14 @@ class FieldTest(unittest.TestCase):
         with query_counter() as q:
             self.assertEqual(q, 0)
 
-            group_obj = Group.objects.first().select_related()
+            Group.objects.first().select_related()
             self.assertEqual(q, 4)
 
         # Queryset select_related
         with query_counter() as q:
             self.assertEqual(q, 0)
 
-            group_objs = Group.objects.select_related()
+            Group.objects.select_related()
             self.assertEqual(q, 4)
 
         UserA.drop_collection()
@@ -396,7 +399,7 @@ class FieldTest(unittest.TestCase):
             for k, m in group_obj.members.iteritems():
                 self.assertTrue(isinstance(m, User))
 
-       # Queryset select_related
+        # Queryset select_related
         with query_counter() as q:
             self.assertEqual(q, 0)
 
@@ -467,7 +470,7 @@ class FieldTest(unittest.TestCase):
         with query_counter() as q:
             self.assertEqual(q, 0)
 
-            group_objs = Group.objects.select_related()
+            Group.objects.select_related()
             self.assertEqual(q, 4)
 
         Group.objects.delete()
@@ -523,14 +526,14 @@ class FieldTest(unittest.TestCase):
         with query_counter() as q:
             self.assertEqual(q, 0)
 
-            group_obj = Group.objects.first().select_related()
+            Group.objects.first().select_related()
             self.assertEqual(q, 2)
 
         # Queryset select_related
         with query_counter() as q:
             self.assertEqual(q, 0)
 
-            group_objs = Group.objects.select_related()
+            Group.objects.select_related()
             self.assertEqual(q, 2)
 
         UserA.drop_collection()
@@ -590,7 +593,7 @@ class FieldTest(unittest.TestCase):
         with query_counter() as q:
             self.assertEqual(q, 0)
 
-            group_objs = Group.objects.select_related()
+            Group.objects.select_related()
             self.assertEqual(q, 4)
 
         Group.objects.delete()
@@ -623,7 +626,10 @@ class FieldTest(unittest.TestCase):
         root = Asset(name='', path="/", title="Site Root")
         root.save()
 
-        company = Asset(name='company', title='Company', parent=root, parents=[root])
+        company = Asset(name='company',
+                        title='Company',
+                        parent=root,
+                        parents=[root])
         company.save()
 
         root.children = [company]

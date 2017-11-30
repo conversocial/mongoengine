@@ -26,12 +26,11 @@ class DynamicDocTest(unittest.TestCase):
         p.name = "James"
         p.age = 34
 
-        self.assertEquals(p.to_mongo(),
-            {"_cls": "Person", "name": "James", "age": 34}
-        )
+        self.assertEquals(
+            p.to_mongo(),
+            {"_cls": "Person", "name": "James", "age": 34})
 
         p.save()
-
         self.assertEquals(self.Person.objects.first().age, 34)
 
         # Confirm no changes to self.Person
@@ -40,11 +39,15 @@ class DynamicDocTest(unittest.TestCase):
     def test_dynamic_document_delta(self):
         """Ensures simple dynamic documents can delta correctly"""
         p = self.Person(name="James", age=34)
-        self.assertEquals(p._delta(), ({'age': 34, 'name': 'James', '_cls': 'Person'}, {}))
+        self.assertEquals(
+            p._delta(),
+            ({'age': 34, 'name': 'James', '_cls': 'Person'}, {}))
 
         p.doc = 123
         del(p.doc)
-        self.assertEquals(p._delta(), ({'age': 34, 'name': 'James', '_cls': 'Person'}, {'doc': 1}))
+        self.assertEquals(
+            p._delta(),
+            ({'age': 34, 'name': 'James', '_cls': 'Person'}, {'doc': 1}))
 
     def test_change_scope_of_variable(self):
         """Test changing the scope of a dynamic field has no adverse effects"""
@@ -170,15 +173,15 @@ class DynamicDocTest(unittest.TestCase):
         embedded_1.list_field = ['1', 2, {'hello': 'world'}]
         doc.embedded_field = embedded_1
 
-        self.assertEquals(doc.to_mongo(), {"_cls": "Doc",
-            "embedded_field": {
+        self.assertEquals(
+            doc.to_mongo(),
+            {"_cls": "Doc",
+             "embedded_field": {
                 "_cls": "Embedded",
                 "string_field": "hello",
                 "int_field": 1,
                 "dict_field": {"hello": "world"},
-                "list_field": ['1', 2, {'hello': 'world'}]
-            }
-        })
+                "list_field": ['1', 2, {'hello': 'world'}]}})
         doc.save()
 
         doc = Doc.objects.first()
@@ -213,21 +216,21 @@ class DynamicDocTest(unittest.TestCase):
         embedded_1.list_field = ['1', 2, embedded_2]
         doc.embedded_field = embedded_1
 
-        self.assertEquals(doc.to_mongo(), {"_cls": "Doc",
-            "embedded_field": {
+        self.assertEquals(
+            doc.to_mongo(),
+            {"_cls": "Doc",
+             "embedded_field": {
                 "_cls": "Embedded",
                 "string_field": "hello",
                 "int_field": 1,
                 "dict_field": {"hello": "world"},
-                "list_field": ['1', 2,
-                    {"_cls": "Embedded",
-                    "string_field": "hello",
-                    "int_field": 1,
-                    "dict_field": {"hello": "world"},
-                    "list_field": ['1', 2, {'hello': 'world'}]}
-                ]
-            }
-        })
+                "list_field": ['1',
+                               2,
+                               {"_cls": "Embedded",
+                                "string_field": "hello",
+                                "int_field": 1,
+                                "dict_field": {"hello": "world"},
+                                "list_field": ['1', 2, {'hello': 'world'}]}]}})
         doc.save()
         doc = Doc.objects.first()
         self.assertEquals(doc.embedded_field.__class__, Embedded)
@@ -243,7 +246,8 @@ class DynamicDocTest(unittest.TestCase):
         self.assertEquals(embedded_field.string_field, "hello")
         self.assertEquals(embedded_field.int_field, 1)
         self.assertEquals(embedded_field.dict_field, {'hello': 'world'})
-        self.assertEquals(embedded_field.list_field, ['1', 2, {'hello': 'world'}])
+        self.assertEquals(embedded_field.list_field,
+                          ['1', 2, {'hello': 'world'}])
 
     def test_delta_for_dynamic_documents(self):
         p = self.Person()
@@ -345,13 +349,15 @@ class DynamicDocTest(unittest.TestCase):
         embedded_delta.update({
             '_cls': 'Embedded',
         })
-        self.assertEquals(doc._delta(), ({'embedded_field': embedded_delta}, {}))
+        self.assertEquals(doc._delta(),
+                          ({'embedded_field': embedded_delta}, {}))
 
         doc.save()
         doc.reload()
 
         doc.embedded_field.dict_field = {}
-        self.assertEquals(doc._get_changed_fields(), ['embedded_field.dict_field'])
+        self.assertEquals(doc._get_changed_fields(),
+                          ['embedded_field.dict_field'])
         self.assertEquals(doc.embedded_field._delta(), ({}, {'dict_field': 1}))
 
         self.assertEquals(doc._delta(), ({}, {'embedded_field.dict_field': 1}))
@@ -359,7 +365,8 @@ class DynamicDocTest(unittest.TestCase):
         doc.reload()
 
         doc.embedded_field.list_field = []
-        self.assertEquals(doc._get_changed_fields(), ['embedded_field.list_field'])
+        self.assertEquals(doc._get_changed_fields(),
+                          ['embedded_field.list_field'])
         self.assertEquals(doc.embedded_field._delta(), ({}, {'list_field': 1}))
         self.assertEquals(doc._delta(), ({}, {'embedded_field.list_field': 1}))
         doc.save()
@@ -372,7 +379,8 @@ class DynamicDocTest(unittest.TestCase):
         embedded_2.list_field = ['1', 2, {'hello': 'world'}]
 
         doc.embedded_field.list_field = ['1', 2, embedded_2]
-        self.assertEquals(doc._get_changed_fields(), ['embedded_field.list_field'])
+        self.assertEquals(doc._get_changed_fields(),
+                          ['embedded_field.list_field'])
         self.assertEquals(doc.embedded_field._delta(), ({
             'list_field': ['1', 2, {
                 '_cls': 'Embedded',
@@ -383,15 +391,17 @@ class DynamicDocTest(unittest.TestCase):
             }]
         }, {}))
 
-        self.assertEquals(doc._delta(), ({
-            'embedded_field.list_field': ['1', 2, {
-                '_cls': 'Embedded',
+        self.assertEquals(
+            doc._delta(),
+            ({'embedded_field.list_field': [
+                '1',
+                2,
+                {'_cls': 'Embedded',
                  'string_field': 'hello',
                  'dict_field': {'hello': 'world'},
                  'int_field': 1,
-                 'list_field': ['1', 2, {'hello': 'world'}],
-            }]
-        }, {}))
+                 'list_field': ['1', 2, {'hello': 'world'}]}]},
+             {}))
         doc.save()
         doc.reload()
 
@@ -399,27 +409,38 @@ class DynamicDocTest(unittest.TestCase):
         self.assertEquals(doc.embedded_field.list_field[0], '1')
         self.assertEquals(doc.embedded_field.list_field[1], 2)
         for k in doc.embedded_field.list_field[2]._fields:
-            self.assertEquals(doc.embedded_field.list_field[2][k], embedded_2[k])
+            self.assertEquals(doc.embedded_field.list_field[2][k],
+                              embedded_2[k])
 
         doc.embedded_field.list_field[2].string_field = 'world'
-        self.assertEquals(doc._get_changed_fields(), ['embedded_field.list_field.2.string_field'])
-        self.assertEquals(doc.embedded_field._delta(), ({'list_field.2.string_field': 'world'}, {}))
-        self.assertEquals(doc._delta(), ({'embedded_field.list_field.2.string_field': 'world'}, {}))
+        self.assertEquals(
+            doc._get_changed_fields(),
+            ['embedded_field.list_field.2.string_field'])
+        self.assertEquals(
+            doc.embedded_field._delta(),
+            ({'list_field.2.string_field': 'world'}, {}))
+        self.assertEquals(
+            doc._delta(),
+            ({'embedded_field.list_field.2.string_field': 'world'}, {}))
         doc.save()
         doc.reload()
-        self.assertEquals(doc.embedded_field.list_field[2].string_field, 'world')
+        self.assertEquals(doc.embedded_field.list_field[2].string_field,
+                          'world')
 
         # Test multiple assignments
         doc.embedded_field.list_field[2].string_field = 'hello world'
         doc.embedded_field.list_field[2] = doc.embedded_field.list_field[2]
-        self.assertEquals(doc._get_changed_fields(), ['embedded_field.list_field'])
-        self.assertEquals(doc.embedded_field._delta(), ({
-            'list_field': ['1', 2, {
-            '_cls': 'Embedded',
-            'string_field': 'hello world',
-            'int_field': 1,
-            'list_field': ['1', 2, {'hello': 'world'}],
-            'dict_field': {'hello': 'world'}}]}, {}))
+        self.assertEquals(doc._get_changed_fields(),
+                          ['embedded_field.list_field'])
+        self.assertEquals(
+            doc.embedded_field._delta(),
+            ({'list_field': ['1', 2, {
+              '_cls': 'Embedded',
+              'string_field': 'hello world',
+              'int_field': 1,
+              'list_field': ['1', 2, {'hello': 'world'}],
+              'dict_field': {'hello': 'world'}}]},
+             {}))
         self.assertEquals(doc._delta(), ({
             'embedded_field.list_field': ['1', 2, {
                 '_cls': 'Embedded',
@@ -430,32 +451,49 @@ class DynamicDocTest(unittest.TestCase):
             ]}, {}))
         doc.save()
         doc.reload()
-        self.assertEquals(doc.embedded_field.list_field[2].string_field, 'hello world')
+        self.assertEquals(doc.embedded_field.list_field[2].string_field,
+                          'hello world')
 
         # Test list native methods
         doc.embedded_field.list_field[2].list_field.pop(0)
-        self.assertEquals(doc._delta(), ({'embedded_field.list_field.2.list_field': [2, {'hello': 'world'}]}, {}))
+        self.assertEquals(
+            doc._delta(),
+            ({'embedded_field.list_field.2.list_field': [2,
+                                                         {'hello': 'world'}]},
+             {}))
         doc.save()
         doc.reload()
 
         doc.embedded_field.list_field[2].list_field.append(1)
-        self.assertEquals(doc._delta(), ({'embedded_field.list_field.2.list_field': [2, {'hello': 'world'}, 1]}, {}))
+        self.assertEquals(
+            doc._delta(),
+            ({'embedded_field.list_field.2.list_field': [2,
+                                                         {'hello': 'world'},
+                                                         1]},
+             {}))
         doc.save()
         doc.reload()
-        self.assertEquals(doc.embedded_field.list_field[2].list_field, [2, {'hello': 'world'}, 1])
+        self.assertEquals(
+            doc.embedded_field.list_field[2].list_field,
+            [2, {'hello': 'world'}, 1])
 
         doc.embedded_field.list_field[2].list_field.sort()
         doc.save()
         doc.reload()
-        self.assertEquals(doc.embedded_field.list_field[2].list_field, [1, 2, {'hello': 'world'}])
+        self.assertEquals(doc.embedded_field.list_field[2].list_field,
+                          [1, 2, {'hello': 'world'}])
 
         del(doc.embedded_field.list_field[2].list_field[2]['hello'])
-        self.assertEquals(doc._delta(), ({'embedded_field.list_field.2.list_field': [1, 2, {}]}, {}))
+        self.assertEquals(
+            doc._delta(),
+            ({'embedded_field.list_field.2.list_field': [1, 2, {}]}, {}))
         doc.save()
         doc.reload()
 
         del(doc.embedded_field.list_field[2].list_field)
-        self.assertEquals(doc._delta(), ({}, {'embedded_field.list_field.2.list_field': 1}))
+        self.assertEquals(
+            doc._delta(),
+            ({}, {'embedded_field.list_field.2.list_field': 1}))
 
         doc.save()
         doc.reload()
@@ -465,10 +503,13 @@ class DynamicDocTest(unittest.TestCase):
         doc.reload()
 
         doc.dict_field['embedded'].string_field = 'Hello World'
-        self.assertEquals(doc._get_changed_fields(), ['dict_field.embedded.string_field'])
-        self.assertEquals(doc._delta(), ({'dict_field.embedded.string_field': 'Hello World'}, {}))
+        self.assertEquals(
+            doc._get_changed_fields(),
+            ['dict_field.embedded.string_field'])
+        self.assertEquals(
+            doc._delta(),
+            ({'dict_field.embedded.string_field': 'Hello World'}, {}))
 
 
 if __name__ == '__main__':
     unittest.main()
-

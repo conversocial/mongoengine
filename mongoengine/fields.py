@@ -130,9 +130,9 @@ class EmailField(StringField):
     """
 
     EMAIL_REGEX = re.compile(
-        r"(^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
-        r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"'  # quoted-string
-        r')@(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$', re.IGNORECASE  # domain
+        r"(^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom  # noqa
+        r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"'  # quoted-string  # noqa
+        r')@(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$', re.IGNORECASE  # domain  # noqa
     )
 
     def validate(self, value):
@@ -279,16 +279,16 @@ class DateTimeField(BaseField):
             usecs = 0
         kwargs = {'microsecond': usecs}
         try:  # Seconds are optional, so try converting seconds first.
-            return datetime.datetime(*time.strptime(value, '%Y-%m-%d %H:%M:%S')[:6],
-                                     **kwargs)
+            return datetime.datetime(
+                *time.strptime(value, '%Y-%m-%d %H:%M:%S')[:6], **kwargs)
         except ValueError:
             try:  # Try without seconds.
-                return datetime.datetime(*time.strptime(value, '%Y-%m-%d %H:%M')[:5],
-                                         **kwargs)
+                return datetime.datetime(
+                    *time.strptime(value, '%Y-%m-%d %H:%M')[:5], **kwargs)
             except ValueError:  # Try without hour/minutes/seconds.
                 try:
-                    return datetime.datetime(*time.strptime(value, '%Y-%m-%d')[:3],
-                                             **kwargs)
+                    return datetime.datetime(
+                        *time.strptime(value, '%Y-%m-%d')[:3], **kwargs)
                 except ValueError:
                     return None
 
@@ -364,7 +364,7 @@ class ComplexDateTimeField(StringField):
 
     def __get__(self, instance, owner):
         data = super(ComplexDateTimeField, self).__get__(instance, owner)
-        if data == None:
+        if data is None:
             return datetime.datetime.now()
         return self._convert_from_string(data)
 
@@ -465,7 +465,7 @@ class GenericEmbeddedDocumentField(BaseField):
             return None
 
         data = document.to_mongo()
-        if not '_cls' in data:
+        if '_cls' not in data:
             data['_cls'] = document._class_name
         return data
 
@@ -487,14 +487,15 @@ class ListField(ComplexBaseField):
         """Make sure that a list of valid fields is being used.
         """
         if (not isinstance(value, (list, tuple, QuerySet)) or
-            isinstance(value, basestring)):
+                isinstance(value, basestring)):
             self.error('Only lists and tuples may be used in a list field')
         super(ListField, self).validate(value)
 
     def prepare_query_value(self, op, value):
         if self.field:
-            if op in ('set', 'unset') and (not isinstance(value, basestring)
-                and hasattr(value, '__iter__')):
+            if op in ('set', 'unset') \
+                    and (not isinstance(value, basestring) and
+                         hasattr(value, '__iter__')):
                 return [self.field.prepare_query_value(op, v) for v in value]
             return self.field.prepare_query_value(op, value)
         return super(ListField, self).prepare_query_value(op, value)
@@ -528,7 +529,9 @@ class SortedListField(ListField):
     def to_mongo(self, value):
         value = super(SortedListField, self).to_mongo(value)
         if self._ordering is not None:
-            return sorted(value, key=itemgetter(self._ordering), reverse=self._order_reverse)
+            return sorted(value,
+                          key=itemgetter(self._ordering),
+                          reverse=self._order_reverse)
         return sorted(value, reverse=self._order_reverse)
 
 
@@ -558,7 +561,8 @@ class DictField(ComplexBaseField):
             self.error('Only dictionaries may be used in a DictField')
 
         if any(k for k in value.keys() if not isinstance(k, basestring)):
-            self.error('Invalid dictionary key - documents must have only string keys')
+            self.error(
+                'Invalid dictionary key - documents must have only string keys')
         if any(('.' in k or '$' in k) for k in value.keys()):
             self.error('Invalid dictionary key name - keys may not contain "."'
                        ' or "$" characters')
@@ -691,8 +695,8 @@ class GenericReferenceField(BaseField):
     """A reference to *any* :class:`~mongoengine.document.Document` subclass
     that will be automatically dereferenced on access (lazily).
 
-    ..note ::  Any documents used as a generic reference must be registered in the
-    document registry.  Importing the model will automatically register it.
+    ..note ::  Any documents used as a generic reference must be registered in
+    the document registry.  Importing the model will automatically register it.
 
     .. versionadded:: 0.3
     """
@@ -825,7 +829,8 @@ class GridFSProxy(object):
     @property
     def fs(self):
         if not self._fs:
-            self._fs = gridfs.GridFS(get_db(self.db_alias), self.collection_name)
+            self._fs = gridfs.GridFS(get_db(self.db_alias),
+                                     self.collection_name)
         return self._fs
 
     def get(self, id=None):
@@ -941,8 +946,10 @@ class FileField(BaseField):
                 grid_file.put(value)
             else:
                 # Create a new proxy object as we don't already have one
-                instance._data[key] = self.proxy_class(key=key, instance=instance,
-                                                       collection_name=self.collection_name)
+                instance._data[key] = self.proxy_class(
+                    key=key,
+                    instance=instance,
+                    collection_name=self.collection_name)
                 instance._data[key].put(value)
         else:
             instance._data[key] = value
@@ -1006,10 +1013,8 @@ class ImageGridFsProxy(GridFSProxy):
             size = field.thumbnail_size
 
             if size['force']:
-                thumbnail = ImageOps.fit(img,
-                                   (size['width'],
-                                    size['height']),
-                                   Image.ANTIALIAS)
+                thumbnail = ImageOps.fit(
+                    img, (size['width'], size['height']), Image.ANTIALIAS)
             else:
                 thumbnail = img.copy()
                 thumbnail.thumbnail((size['width'],
@@ -1017,8 +1022,7 @@ class ImageGridFsProxy(GridFSProxy):
                                     Image.ANTIALIAS)
 
         if thumbnail:
-            thumb_id = self._put_thumbnail(thumbnail,
-                                          img.format)
+            thumb_id = self._put_thumbnail(thumbnail, img.format)
         else:
             thumb_id = None
 
@@ -1036,7 +1040,7 @@ class ImageGridFsProxy(GridFSProxy):
                                                  **kwargs)
 
     def delete(self, *args, **kwargs):
-        #deletes thumbnail
+        # deletes thumbnail
         out = self.get()
         if out and out.thumbnail_id:
             self.fs.delete(out.thumbnail_id)
@@ -1054,6 +1058,7 @@ class ImageGridFsProxy(GridFSProxy):
                            height=h,
                            format=format,
                            **kwargs)
+
     @property
     def size(self):
         """
@@ -1146,12 +1151,12 @@ class GeoPointField(BaseField):
         if not len(value) == 2:
             self.error('Value must be a two-dimensional point')
         if (not isinstance(value[0], (float, int)) and
-            not isinstance(value[1], (float, int))):
+                not isinstance(value[1], (float, int))):
             self.error('Both values in point must be float or int')
 
 
 class SequenceField(IntField):
-    """Provides a sequental counter (see http://www.mongodb.org/display/DOCS/Object+IDs#ObjectIDs-SequenceNumbers)
+    """Provides a sequental counter (see http://www.mongodb.org/display/DOCS/Object+IDs#ObjectIDs-SequenceNumbers)  # noqa
 
     .. note::
 
@@ -1163,7 +1168,7 @@ class SequenceField(IntField):
 
     .. versionadded:: 0.5
     """
-    def __init__(self, collection_name=None, db_alias = None, *args, **kwargs):
+    def __init__(self, collection_name=None, db_alias=None, *args, **kwargs):
         self.collection_name = collection_name or 'mongoengine.counters'
         self.db_alias = db_alias or DEFAULT_CONNECTION_NAME
         return super(SequenceField, self).__init__(*args, **kwargs)
@@ -1172,9 +1177,9 @@ class SequenceField(IntField):
         """
         Generate and Increment the counter
         """
-        sequence_id = "{0}.{1}".format(self.owner_document._get_collection_name(),
-                                       self.name)
-        collection = get_db(alias = self.db_alias )[self.collection_name]
+        sequence_id = "{0}.{1}".format(
+            self.owner_document._get_collection_name(), self.name)
+        collection = get_db(alias=self.db_alias)[self.collection_name]
         counter = collection.find_and_modify(query={"_id": sequence_id},
                                              update={"$inc": {"next": 1}},
                                              new=True,
