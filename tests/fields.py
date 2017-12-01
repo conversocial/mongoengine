@@ -5,7 +5,15 @@ import uuid
 
 from decimal import Decimal
 
-from mongoengine import *
+from mongoengine import (
+    connect, ValidationError,
+    StringField, IntField, BooleanField, URLField, UUIDField,
+    BinaryField, DateTimeField, ComplexDateTimeField,
+    FileField, ImageField, FloatField, DecimalField,
+    ListField, MapField, DictField, SortedListField,
+    SequenceField, ReferenceField, GenericReferenceField,
+    Document, EmbeddedDocument,
+    EmbeddedDocumentField, GenericEmbeddedDocumentField)
 from mongoengine.connection import get_db, register_db
 from mongoengine.base import _document_registry
 
@@ -25,7 +33,8 @@ class FieldTest(unittest.TestCase):
         class Person(Document):
             name = StringField()
             age = IntField(default=30, help_text="Your real age")
-            userid = StringField(default=lambda: 'test', verbose_name="User Identity")
+            userid = StringField(default=lambda: 'test',
+                                 verbose_name="User Identity")
 
         person = Person(name='Test Person')
         self.assertEqual(person._data['age'], 30)
@@ -551,7 +560,8 @@ class FieldTest(unittest.TestCase):
             name = StringField()
 
         class CategoryList(Document):
-            categories = SortedListField(EmbeddedDocumentField(Category), ordering='count', reverse=True)
+            categories = SortedListField(EmbeddedDocumentField(Category),
+                                         ordering='count', reverse=True)
             name = StringField()
 
         catlist = CategoryList(name="Top categories")
@@ -877,11 +887,11 @@ class FieldTest(unittest.TestCase):
         Simple.objects().update(
             set__mapping__nested_dict__list__1=StringSetting(value='Boo'))
         self.assertEquals(
-            Simple.objects.filter(mapping__nested_dict__list__1__value='foo') \
+            Simple.objects.filter(mapping__nested_dict__list__1__value='foo')
                           .count(),
             0)
         self.assertEquals(
-            Simple.objects.filter(mapping__nested_dict__list__1__value='Boo') \
+            Simple.objects.filter(mapping__nested_dict__list__1__value='Boo')
                           .count(),
             1)
 
@@ -1305,7 +1315,7 @@ class FieldTest(unittest.TestCase):
         Person(name="Wilson Jr").save()
 
         self.assertEquals(repr(Person.objects(city=None)),
-                            "[<Person: Person object>]")
+                          "[<Person: Person object>]")
 
     def test_binary_fields(self):
         """Ensure that binary fields can be stored and retrieved.
@@ -1367,8 +1377,10 @@ class FieldTest(unittest.TestCase):
         """Ensure that value is in a container of allowed values.
         """
         class Shirt(Document):
-            size = StringField(max_length=3, choices=(('S', 'Small'), ('M', 'Medium'), ('L', 'Large'),
-                                                      ('XL', 'Extra Large'), ('XXL', 'Extra Extra Large')))
+            size = StringField(
+                max_length=3,
+                choices=(('S', 'Small'), ('M', 'Medium'), ('L', 'Large'),
+                         ('XL', 'Extra Large'), ('XXL', 'Extra Extra Large')))
 
         Shirt.drop_collection()
 
@@ -1387,9 +1399,14 @@ class FieldTest(unittest.TestCase):
         """Test dynamic helper for returning the display value of a choices field.
         """
         class Shirt(Document):
-            size = StringField(max_length=3, choices=(('S', 'Small'), ('M', 'Medium'), ('L', 'Large'),
-                                                      ('XL', 'Extra Large'), ('XXL', 'Extra Extra Large')))
-            style = StringField(max_length=3, choices=(('S', 'Small'), ('B', 'Baggy'), ('W', 'wide')), default='S')
+            size = StringField(
+                max_length=3,
+                choices=(('S', 'Small'), ('M', 'Medium'), ('L', 'Large'),
+                         ('XL', 'Extra Large'), ('XXL', 'Extra Extra Large')))
+            style = StringField(
+                max_length=3,
+                choices=(('S', 'Small'), ('B', 'Baggy'), ('W', 'wide')),
+                default='S')
 
         Shirt.drop_collection()
 
@@ -1416,7 +1433,8 @@ class FieldTest(unittest.TestCase):
         """Ensure that value is in a container of allowed values.
         """
         class Shirt(Document):
-            size = StringField(max_length=3, choices=('S', 'M', 'L', 'XL', 'XXL'))
+            size = StringField(max_length=3,
+                               choices=('S', 'M', 'L', 'XL', 'XXL'))
 
         Shirt.drop_collection()
 
@@ -1435,8 +1453,11 @@ class FieldTest(unittest.TestCase):
         """Test dynamic helper for returning the display value of a choices field.
         """
         class Shirt(Document):
-            size = StringField(max_length=3, choices=('S', 'M', 'L', 'XL', 'XXL'))
-            style = StringField(max_length=3, choices=('Small', 'Baggy', 'wide'), default='Small')
+            size = StringField(max_length=3,
+                               choices=('S', 'M', 'L', 'XL', 'XXL'))
+            style = StringField(max_length=3,
+                                choices=('Small', 'Baggy', 'wide'),
+                                default='Small')
 
         Shirt.drop_collection()
 
@@ -1639,6 +1660,7 @@ class FieldTest(unittest.TestCase):
     def test_file_multidb(self):
         connect()
         register_db('testfiles', 'testfiles')
+
         class TestFile(Document):
             name = StringField()
             file = FileField(db_alias="testfiles",

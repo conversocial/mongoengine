@@ -3,7 +3,7 @@ import pymongo
 
 import mongoengine.connection
 
-from mongoengine import *
+from mongoengine import connect, register_connection
 from mongoengine.connection import (
     get_db, get_connection, register_db, ConnectionError)
 

@@ -1,6 +1,8 @@
 import unittest
 
-from mongoengine import *
+from mongoengine import (
+    connect, StringField, IntField,
+    DynamicDocument, DynamicEmbeddedDocument)
 from mongoengine.connection import get_db, register_db
 
 
@@ -189,7 +191,8 @@ class DynamicDocTest(unittest.TestCase):
         self.assertEquals(doc.embedded_field.string_field, "hello")
         self.assertEquals(doc.embedded_field.int_field, 1)
         self.assertEquals(doc.embedded_field.dict_field, {'hello': 'world'})
-        self.assertEquals(doc.embedded_field.list_field, ['1', 2, {'hello': 'world'}])
+        self.assertEquals(doc.embedded_field.list_field,
+                          ['1', 2, {'hello': 'world'}])
 
     def test_complex_embedded_documents(self):
         """Test complex dynamic embedded documents setups"""

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from mongoengine import *
+from mongoengine import connect, Document, StringField
 from mongoengine import signals
 from mongoengine.connection import register_db
 
@@ -23,6 +23,7 @@ class SignalTests(unittest.TestCase):
     def setUp(self):
         connect()
         register_db('mongoenginetest')
+
         class Author(Document):
             name = StringField()
 
@@ -71,7 +72,6 @@ class SignalTests(unittest.TestCase):
                 else:
                     signal_output.append('Not loaded')
         self.Author = Author
-
 
         class Another(Document):
             name = StringField()

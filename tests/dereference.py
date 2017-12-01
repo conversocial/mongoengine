@@ -1,6 +1,9 @@
 import unittest
 
-from mongoengine import *
+from mongoengine import (
+    StringField, ListField, MapField, DictField,
+    ReferenceField, GenericReferenceField,
+    Document, EmbeddedDocument, EmbeddedDocumentField)
 from mongoengine.connection import get_db, register_db, connect
 from mongoengine.tests import query_counter
 
@@ -271,8 +274,7 @@ class FieldTest(unittest.TestCase):
 
         with query_counter() as q:
             self.assertEqual(q, 0)
-
-            group_obj = Group.objects.first()
+            Group.objects.first()
             self.assertEqual(q, 1)
 
         # Document select_related
@@ -334,8 +336,7 @@ class FieldTest(unittest.TestCase):
 
         with query_counter() as q:
             self.assertEqual(q, 0)
-
-            group_obj = Group.objects.first()
+            Group.objects.first()
             self.assertEqual(q, 1)
 
         # Document select_related
@@ -518,8 +519,7 @@ class FieldTest(unittest.TestCase):
 
         with query_counter() as q:
             self.assertEqual(q, 0)
-
-            group_obj = Group.objects.first()
+            Group.objects.first()
             self.assertEqual(q, 1)
 
         # Document select_related

@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from mongoengine import *
+from mongoengine import (
+    IntField, StringField, DateTimeField, FileField, ListField,
+    EmbeddedDocumentField, Document, EmbeddedDocument)
 
 
 class PickleEmbedded(EmbeddedDocument):

@@ -7,7 +7,14 @@ from datetime import datetime, timedelta
 from mongoengine.queryset import (QuerySet, QuerySetManager,
                                   MultipleObjectsReturned, DoesNotExist,
                                   QueryFieldList)
-from mongoengine import *
+from mongoengine import (
+    connect, Q, queryset_manager, CASCADE, NULLIFY, DENY,
+    StringField, IntField, BooleanField, DateTimeField,
+    DecimalField, GeoPointField, ObjectIdField,
+    ListField, MapField, DictField,
+    ReferenceField, GenericReferenceField,
+    Document, EmbeddedDocument, EmbeddedDocumentField,
+    OperationError, InvalidQueryError)
 from mongoengine.connection import get_connection, register_db
 from mongoengine.tests import query_counter
 
@@ -293,11 +300,11 @@ class QuerySetTest(unittest.TestCase):
         comment2 = Comment(name='testb')
         post1 = Post(comments=[comment1, comment2])
         post2 = Post(comments=[comment2, comment2])
-        blog1 = Blog.objects.create(posts=[post1, post2])
-        blog2 = Blog.objects.create(posts=[post2, post1])
+        Blog.objects.create(posts=[post1, post2])
+        Blog.objects.create(posts=[post2, post1])
 
         # Update all of the first comments of second posts of all blogs
-        blog = Blog.objects().update(set__posts__1__comments__0__name="testc")
+        Blog.objects().update(set__posts__1__comments__0__name="testc")
         testc_blogs = Blog.objects(posts__1__comments__0__name="testc")
         self.assertEqual(len(testc_blogs), 2)
 
@@ -747,13 +754,15 @@ class QuerySetTest(unittest.TestCase):
 
         BlogPost.drop_collection()
 
-        blog_post_1 = BlogPost(title="Blog Post #1",
-                               published_date=datetime(2010, 1, 5, 0, 0 ,0))
-        blog_post_2 = BlogPost(title="Blog Post #2",
-                               published_date=datetime(2010, 1, 6, 0, 0 ,0))
-        blog_post_3 = BlogPost(title="Blog Post #3",
-                               published_date=datetime(2010, 1, 7, 0, 0 ,0))
-
+        blog_post_1 = BlogPost(
+            title="Blog Post #1",
+            published_date=datetime(2010, 1, 5, 0, 0, 0))
+        blog_post_2 = BlogPost(
+            title="Blog Post #2",
+            published_date=datetime(2010, 1, 6, 0, 0, 0))
+        blog_post_3 = BlogPost(
+            title="Blog Post #3",
+            published_date=datetime(2010, 1, 7, 0, 0, 0))
         blog_post_1.save()
         blog_post_2.save()
         blog_post_3.save()
@@ -969,7 +978,7 @@ class QuerySetTest(unittest.TestCase):
 
         Numbers.drop_collection()
 
-        numbers = Numbers(n=[0, 1, 2 ,3, 4, 5, -5, -4, -3, -2, -1])
+        numbers = Numbers(n=[0, 1, 2, 3, 4, 5, -5, -4, -3, -2, -1])
         numbers.save()
 
         # first three
@@ -1429,7 +1438,8 @@ class QuerySetTest(unittest.TestCase):
         post.reload()
         self.assertEqual(post.tags, ["code"])
 
-        BlogPost.objects.filter(id=post.id).update(push_all__tags=["mongodb", "code"])
+        BlogPost.objects.filter(id=post.id) \
+                .update(push_all__tags=["mongodb", "code"])
         post.reload()
         self.assertEqual(post.tags, ["code", "mongodb", "code"])
 
@@ -1441,7 +1451,10 @@ class QuerySetTest(unittest.TestCase):
         post.reload()
         self.assertEqual(post.tags, [])
 
-        BlogPost.objects(slug="test").update(__raw__={"$addToSet": {"tags": {"$each": ["code", "mongodb", "code"]}}})
+        BlogPost.objects(slug="test") \
+                .update(__raw__={
+                    "$addToSet": {
+                        "tags": {"$each": ["code", "mongodb", "code"]}}})
         post.reload()
         self.assertEqual(post.tags, ["code", "mongodb"])
 
@@ -1672,7 +1685,7 @@ class QuerySetTest(unittest.TestCase):
              up_votes=1446,
              down_votes=530,
              submitted=now-timedelta(hours=13)).save()
-        Link(title= "Arabic flashcards land physics student in jail.",
+        Link(title="Arabic flashcards land physics student in jail.",
              up_votes=215,
              down_votes=105,
              submitted=now - timedelta(hours=6)).save()
@@ -1905,7 +1918,8 @@ class QuerySetTest(unittest.TestCase):
 
         freq = Person.objects.item_frequencies('city', map_reduce=True)
         self.assertEquals(freq, {'CRB': 1.0, None: 1.0})
-        freq = Person.objects.item_frequencies('city', normalize=True, map_reduce=True)
+        freq = Person.objects \
+                     .item_frequencies('city', normalize=True, map_reduce=True)
         self.assertEquals(freq, {'CRB': 0.5, None: 0.5})
 
     def test_item_frequencies_with_null_embedded(self):
@@ -2070,7 +2084,7 @@ class QuerySetTest(unittest.TestCase):
 
         BlogPost.drop_collection()
 
-        data = {'title':'Post 1'}
+        data = {'title': 'Post 1'}
         post = BlogPost(**data)
         post.save()
 
@@ -2783,6 +2797,7 @@ class QuerySetTest(unittest.TestCase):
 
     def test_scalar_decimal(self):
         from decimal import Decimal
+
         class Person(Document):
             name = StringField()
             rating = DecimalField()

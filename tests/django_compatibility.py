@@ -3,7 +3,7 @@
 import unittest
 from distutils.version import StrictVersion
 
-from mongoengine import *
+from mongoengine import connect, Q, IntField, StringField, Document
 from mongoengine.connection import register_db
 from mongoengine.django.shortcuts import get_document_or_404
 
@@ -102,7 +102,7 @@ class QuerySetTest(unittest.TestCase):
 
         paginator = Paginator(Page.objects.all(), 2)
 
-        t = Template("{% for i in page.object_list  %}{{ i.name }}:{% endfor %}")
+        t = Template("{% for i in page.object_list  %}{{ i.name }}:{% endfor %}")  # noqa
         for p in paginator.page_range:
             d = {"page": paginator.page(p)}
             end = p * 2
