@@ -105,7 +105,8 @@ def get_document(name):
     if not doc:
         # Possible old style names
         end = ".%s" % name
-        possible_match = [k for k in _document_registry.keys() if k.endswith(end)]
+        possible_match = [k for k in _document_registry.keys()
+                          if k.endswith(end)]
         if len(possible_match) == 1:
             doc = _document_registry.get(possible_match.pop(), None)
     if not doc:
@@ -136,7 +137,8 @@ class BaseField(object):
 
     def __init__(self, db_field=None, name=None, required=False, default=None,
                  primary_key=False,
-                 validation=None, choices=None, verbose_name=None, help_text=None):
+                 validation=None, choices=None, verbose_name=None,
+                 help_text=None):
         self.db_field = (db_field or name) if not primary_key else '_id'
         if name:
             msg = "Fields' 'name' attribute deprecated in favour of 'db_field'"
@@ -214,12 +216,14 @@ class BaseField(object):
         # check choices
         if self.choices:
             if isinstance(self.choices[0], (list, tuple)):
-                option_keys = [option_key for option_key, option_value in self.choices]
+                option_keys = [
+                    option_key for option_key, option_value in self.choices]
                 if value not in option_keys:
                     self.error('Value must be one of %s' % unicode(option_keys))
             else:
                 if value not in self.choices:
-                    self.error('Value must be one of %s' % unicode(self.choices))
+                    self.error(
+                        'Value must be one of %s' % unicode(self.choices))
 
         # check validation argument
         if self.validation is not None:
@@ -305,7 +309,8 @@ class ComplexBaseField(BaseField):
                 return value
 
         if self.field:
-            value_dict = dict([(key, self.field.to_python(item)) for key, item in value.items()])
+            value_dict = dict([(key, self.field.to_python(item))
+                               for key, item in value.items()])
         else:
             value_dict = {}
             for k, v in value.items():
@@ -333,7 +338,8 @@ class ComplexBaseField(BaseField):
                 return value
 
         if self.field:
-            value_dict = dict([(key, self.field.to_mongo(item)) for key, item in value.items()])
+            value_dict = dict([(key, self.field.to_mongo(item))
+                               for key, item in value.items()])
         else:
             value_dict = {}
             for k, v in value.items():
@@ -347,7 +353,8 @@ class ComplexBaseField(BaseField):
                     # _cls data so make it a generic reference allows
                     # us to dereference
                     meta = getattr(v, 'meta', getattr(v, '_meta', {}))
-                    if meta and not meta.get('allow_inheritance', True) and not self.field:
+                    if meta and not meta.get('allow_inheritance', True) and \
+                            not self.field:
                         from fields import GenericReferenceField
                         value_dict[k] = GenericReferenceField().to_mongo(v)
                     else:
@@ -359,7 +366,8 @@ class ComplexBaseField(BaseField):
                     value_dict[k] = self.to_mongo(v)
 
         if is_list:  # Convert back to a list
-            return [v for k, v in sorted(value_dict.items(), key=operator.itemgetter(0))]
+            return [v for k, v in
+                    sorted(value_dict.items(), key=operator.itemgetter(0))]
         return value_dict
 
     def validate(self, value):
@@ -432,7 +440,8 @@ class BaseDynamicField(BaseField):
             data[k] = self.to_mongo(v)
 
         if is_list:  # Convert back to a list
-            value = [v for k, v in sorted(data.items(), key=operator.itemgetter(0))]
+            value = [v for k, v in
+                     sorted(data.items(), key=operator.itemgetter(0))]
         else:
             value = data
         return value
@@ -484,13 +493,14 @@ class DocumentMetaclass(type):
                                if issubclass(v.__class__, BaseField)]))
 
             # Handle simple mixin's with meta
-            if hasattr(base, 'meta') and not isinstance(base, DocumentMetaclass):
+            if hasattr(base, 'meta') and \
+                    not isinstance(base, DocumentMetaclass):
                 meta = attrs.get('meta', {})
                 meta.update(base.meta)
                 attrs['meta'] = meta
 
             for p_base in base.__bases__:
-                #optimize :-)
+                # optimize :-)
                 if p_base in (object, BaseDocument):
                     continue
 
@@ -525,12 +535,11 @@ class DocumentMetaclass(type):
                 class_name.append(base._class_name)
                 if not base._meta.get('allow_inheritance_defined', True):
                     warnings.warn(
-                        "%s uses inheritance, the default for allow_inheritance "
-                        "is changing to off by default.  Please add it to the "
-                        "document meta." % name,
-                        FutureWarning
-                    )
-                if base._meta.get('allow_inheritance', True) == False:
+                        "%s uses inheritance, the default for "
+                        "allow_inheritance is changing to off by default.  "
+                        "Please add it to the document meta."
+                        % name, FutureWarning)
+                if base._meta.get('allow_inheritance', True) is False:
                     raise ValueError('Document %s may not be subclassed' %
                                      base.__name__)
                 else:
@@ -545,7 +554,8 @@ class DocumentMetaclass(type):
 
         # Only simple classes - direct subclasses of Document - may set
         # allow_inheritance to False
-        if not simple_class and not meta['allow_inheritance'] and not meta['abstract']:
+        if not simple_class and not meta['allow_inheritance'] and \
+                not meta['abstract']:
             raise ValueError('Only direct subclasses of Document may set '
                              '"allow_inheritance" to False')
         attrs['_meta'] = meta
@@ -561,14 +571,20 @@ class DocumentMetaclass(type):
                 if not attr_value.db_field:
                     attr_value.db_field = attr_name
                 doc_fields[attr_name] = attr_value
-                field_names[attr_value.db_field] = field_names.get(attr_value.db_field, 0) + 1
+                field_names[attr_value.db_field] = \
+                    field_names.get(attr_value.db_field, 0) + 1
 
         duplicate_db_fields = [k for k, v in field_names.items() if v > 1]
         if duplicate_db_fields:
-            raise InvalidDocumentError("Multiple db_fields defined for: %s " % ", ".join(duplicate_db_fields))
+            raise InvalidDocumentError(
+                "Multiple db_fields defined for: %s "
+                % ", ".join(duplicate_db_fields))
         attrs['_fields'] = doc_fields
-        attrs['_db_field_map'] = dict([(k, v.db_field) for k, v in doc_fields.items() if k != v.db_field])
-        attrs['_reverse_db_field_map'] = dict([(v, k) for k, v in attrs['_db_field_map'].items()])
+        attrs['_db_field_map'] = dict([
+            (k, v.db_field) for k, v in doc_fields.items()
+            if k != v.db_field])
+        attrs['_reverse_db_field_map'] = dict([
+            (v, k) for k, v in attrs['_db_field_map'].items()])
 
         from mongoengine import Document, EmbeddedDocument, DictField
 
@@ -579,18 +595,28 @@ class DocumentMetaclass(type):
             delete_rule = getattr(field, 'reverse_delete_rule', DO_NOTHING)
             f = field
             if isinstance(f, ComplexBaseField) and hasattr(f, 'field'):
-                delete_rule = getattr(f.field, 'reverse_delete_rule', DO_NOTHING)
+                delete_rule = getattr(f.field, 'reverse_delete_rule',
+                                      DO_NOTHING)
                 if isinstance(f, DictField) and delete_rule != DO_NOTHING:
-                    raise InvalidDocumentError("Reverse delete rules are not supported for %s (field: %s)" % (field.__class__.__name__, field.name))
+                    raise InvalidDocumentError(
+                        "Reverse delete rules are not supported for %s (field: %s)"  # noqa
+                        % (field.__class__.__name__, field.name))
                 f = field.field
 
             if delete_rule != DO_NOTHING:
                 if issubclass(new_class, EmbeddedDocument):
-                    raise InvalidDocumentError("Reverse delete rules are not supported for EmbeddedDocuments (field: %s)" % field.name)
-                f.document_type.register_delete_rule(new_class, field.name, delete_rule)
+                    raise InvalidDocumentError(
+                        "Reverse delete rules are not "
+                        "supported for EmbeddedDocuments (field: %s)"
+                        % field.name)
+                f.document_type.register_delete_rule(
+                    new_class, field.name, delete_rule)
 
-            if field.name and hasattr(Document, field.name) and EmbeddedDocument not in new_class.mro():
-                raise InvalidDocumentError("%s is a document method and not a valid field name" % field.name)
+            if field.name and hasattr(Document, field.name) and \
+                    EmbeddedDocument not in new_class.mro():
+                raise InvalidDocumentError(
+                    "%s is a document method and not a valid field name"
+                    % field.name)
 
         module = attrs.get('__module__')
 
@@ -630,15 +656,18 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
         # Also assume a class is abstract if it has abstract set to True in
         # its meta dictionary. This allows custom Document superclasses.
         if (attrs.get('__metaclass__') == TopLevelDocumentMetaclass or
-            ('meta' in attrs and attrs['meta'].get('abstract', False))):
+                ('meta' in attrs and attrs['meta'].get('abstract', False))):
             # Make sure no base class was non-abstract
-            non_abstract_bases = [b for b in bases
+            non_abstract_bases = [
+                b for b in bases
                 if hasattr(b, '_meta') and not b._meta.get('abstract', False)]
             if non_abstract_bases:
-                raise ValueError("Abstract document cannot have non-abstract base")
+                raise ValueError(
+                    "Abstract document cannot have non-abstract base")
             return super_new(cls, name, bases, attrs)
 
-        collection = ''.join('_%s' % c if c.isupper() else c for c in name).strip('_').lower()
+        collection = ''.join('_%s' % c if c.isupper() else c for c in name) \
+                       .strip('_').lower()
 
         id_field = None
         abstract_base_indexes = []
@@ -648,7 +677,8 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
         # Subclassed documents inherit collection from superclass
         for base in bases:
             if hasattr(base, '_meta'):
-                if 'collection' in attrs.get('meta', {}) and not base._meta.get('abstract', False):
+                if 'collection' in attrs.get('meta', {}) and \
+                        not base._meta.get('abstract', False):
                     import warnings
                     msg = "Trying to set a collection on a subclass (%s)" % name
                     warnings.warn(msg, SyntaxWarning)
@@ -656,7 +686,8 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
                 if base._get_collection_name():
                     collection = base._get_collection_name()
                 # Propagate index options.
-                for key in ('index_background', 'index_drop_dups', 'index_opts'):
+                for key in ('index_background', 'index_drop_dups',
+                            'index_opts'):
                     if key in base._meta:
                         base_meta[key] = base._meta[key]
 
@@ -667,7 +698,8 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
                     base_indexes += base._meta.get('indexes', [])
                 # Propagate 'allow_inheritance'
                 if 'allow_inheritance' in base._meta:
-                    base_meta['allow_inheritance'] = base._meta['allow_inheritance']
+                    base_meta['allow_inheritance'] = \
+                        base._meta['allow_inheritance']
                 if 'queryset_class' in base._meta:
                     base_meta['queryset_class'] = base._meta['queryset_class']
             try:
@@ -693,8 +725,9 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
             'allow_inheritance': True
         }
 
-        allow_inheritance_defined = ('allow_inheritance' in base_meta or
-                                     'allow_inheritance'in attrs.get('meta', {}))
+        allow_inheritance_defined = (
+            'allow_inheritance' in base_meta or
+            'allow_inheritance' in attrs.get('meta', {}))
         meta['allow_inheritance_defined'] = allow_inheritance_defined
         meta.update(base_meta)
 
@@ -735,8 +768,8 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
 
         return new_class
 
-class BaseDocument(object):
 
+class BaseDocument(object):
     _dynamic = False
     _created = True
     _dynamic_lock = True
@@ -806,7 +839,8 @@ class BaseDocument(object):
 
         if not self._created and name in self._meta.get('shard_key', tuple()):
             from queryset import OperationError
-            raise OperationError("Shard Keys are immutable. Tried to update %s" % name)
+            raise OperationError(
+                "Shard Keys are immutable. Tried to update %s" % name)
 
         super(BaseDocument, self).__setattr__(name, value)
 
@@ -881,7 +915,7 @@ class BaseDocument(object):
                 data[field.db_field] = field.to_mongo(value)
         # Only add _cls if allow_inheritance is not False
         if not (hasattr(self, '_meta') and
-                self._meta.get('allow_inheritance', True) == False):
+                self._meta.get('allow_inheritance', True) is False):
             data['_cls'] = self._class_name
         if '_id' in data and data['_id'] is None:
             del data['_id']
@@ -970,9 +1004,17 @@ class BaseDocument(object):
                     continue
                 inspected.add(field.id)
 
-            if isinstance(field, (EmbeddedDocument, DynamicEmbeddedDocument)) and db_field_name not in _changed_fields:  # Grab all embedded fields that have been changed
-                _changed_fields += ["%s%s" % (key, k) for k in field._get_changed_fields(key, inspected) if k]
-            elif isinstance(field, (list, tuple, dict)) and db_field_name not in _changed_fields:  # Loop list / dict fields as they contain documents
+            # Grab all embedded fields that have been changed
+            if isinstance(field,
+                          (EmbeddedDocument, DynamicEmbeddedDocument)) and \
+                    db_field_name not in _changed_fields:
+                _changed_fields += [
+                    "%s%s" % (key, k) for k in
+                    field._get_changed_fields(key, inspected) if k]
+
+            # Loop list / dict fields as they contain documents
+            elif isinstance(field, (list, tuple, dict)) and \
+                    db_field_name not in _changed_fields:
                 # Determine the iterator to use
                 if not hasattr(field, 'items'):
                     iterator = enumerate(field)
@@ -982,7 +1024,9 @@ class BaseDocument(object):
                     if not hasattr(value, '_get_changed_fields'):
                         continue
                     list_key = "%s%s." % (key, index)
-                    _changed_fields += ["%s%s" % (list_key, k) for k in value._get_changed_fields(list_key, inspected) if k]
+                    _changed_fields += [
+                        "%s%s" % (list_key, k) for k in
+                        value._get_changed_fields(list_key, inspected) if k]
         return _changed_fields
 
     def _delta(self):
@@ -1021,7 +1065,8 @@ class BaseDocument(object):
 
             # If we've set a value that ain't the default value dont unset it.
             default = None
-            if self._dynamic and len(parts) and parts[0] in self._dynamic_fields:
+            if self._dynamic and len(parts) and \
+                    parts[0] in self._dynamic_fields:
                 del(set_data[path])
                 unset_data[path] = 1
                 continue
@@ -1034,7 +1079,8 @@ class BaseDocument(object):
                 for p in parts:
                     if p.isdigit():
                         d = d[int(p)]
-                    elif hasattr(d, '__getattribute__') and not isinstance(d, dict):
+                    elif hasattr(d, '__getattribute__') and \
+                            not isinstance(d, dict):
                         real_path = d._reverse_db_field_map.get(p, p)
                         d = getattr(d, real_path)
                     else:
@@ -1076,7 +1122,8 @@ class BaseDocument(object):
         return geo_indices
 
     def __getstate__(self):
-        removals = ["get_%s_display" % k for k, v in self._fields.items() if v.choices]
+        removals = [
+            "get_%s_display" % k for k, v in self._fields.items() if v.choices]
         for k in removals:
             if hasattr(self, k):
                 delattr(self, k)
@@ -1088,8 +1135,12 @@ class BaseDocument(object):
 
     def __set_field_display(self):
         for attr_name, field in self._fields.items():
-            if field.choices:  # dynamically adds a way to get the display value for a field with choices
-                setattr(self, 'get_%s_display' % attr_name, partial(self.__get_field_display, field=field))
+            # dynamically adds a way to get the display value for a field with
+            # choices
+            if field.choices:
+                setattr(self,
+                        'get_%s_display' % attr_name,
+                        partial(self.__get_field_display, field=field))
 
     def __get_field_display(self, field):
         """Returns the display value for a choice field"""
@@ -1282,7 +1333,6 @@ class BaseDict(dict):
 
 if sys.version_info < (2, 5):
     # Prior to Python 2.5, Exception was an old-style class
-    import types
     def subclass_exception(name, parents, unused):
         import types
         return types.ClassType(name, parents, {})

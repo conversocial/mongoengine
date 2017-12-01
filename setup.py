@@ -9,6 +9,7 @@ try:
 except:
     pass
 
+
 def get_version(version_tuple):
     version = '%s.%s' % (version_tuple[0], version_tuple[1])
     if version_tuple[2]:
@@ -47,7 +48,6 @@ setup(name='mongoengine',
       long_description=LONG_DESCRIPTION,
       platforms=['any'],
       classifiers=CLASSIFIERS,
-      install_requires=['pymongo==3.1'],
+      install_requires=['pymongo==3.1', 'blinker==1.4'],
       test_suite='tests',
-      tests_require=['blinker', 'django>=1.3', 'pillow']
-)
+      tests_require=['django>=1.3', 'pillow'])

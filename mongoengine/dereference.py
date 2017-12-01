@@ -69,21 +69,29 @@ class DeReference(object):
                 for field_name, field in item._fields.iteritems():
                     v = item._data.get(field_name, None)
                     if isinstance(v, (DBRef)):
-                        reference_map.setdefault(field.document_type, []).append(v.id)
+                        reference_map.setdefault(field.document_type, []) \
+                                     .append(v.id)
                     elif isinstance(v, (dict, SON)) and '_ref' in v:
-                        reference_map.setdefault(get_document(v['_cls']), []).append(v['_ref'].id)
-                    elif isinstance(v, (dict, list, tuple)) and depth <= self.max_depth:
-                        field_cls = getattr(getattr(field, 'field', None), 'document_type', None)
+                        reference_map.setdefault(get_document(v['_cls']), []) \
+                                     .append(v['_ref'].id)
+                    elif isinstance(v, (dict, list, tuple)) and \
+                            depth <= self.max_depth:
+                        field_cls = getattr(getattr(field, 'field', None),
+                                            'document_type', None)
                         references = self._find_references(v, depth)
                         for key, refs in references.iteritems():
-                            if isinstance(field_cls, (Document, TopLevelDocumentMetaclass)):
+                            if isinstance(
+                                    field_cls,
+                                    (Document, TopLevelDocumentMetaclass)):
                                 key = field_cls
                             reference_map.setdefault(key, []).extend(refs)
             elif isinstance(item, (DBRef)):
                 reference_map.setdefault(item.collection, []).append(item.id)
             elif isinstance(item, (dict, SON)) and '_ref' in item:
-                reference_map.setdefault(get_document(item['_cls']), []).append(item['_ref'].id)
-            elif isinstance(item, (dict, list, tuple)) and depth - 1 <= self.max_depth:
+                reference_map.setdefault(get_document(item['_cls']), []) \
+                             .append(item['_ref'].id)
+            elif isinstance(item, (dict, list, tuple)) and \
+                    depth - 1 <= self.max_depth:
                 references = self._find_references(item, depth - 1)
                 for key, refs in references.iteritems():
                     reference_map.setdefault(key, []).extend(refs)
@@ -96,14 +104,17 @@ class DeReference(object):
         object_map = {}
         for col, dbrefs in self.reference_map.iteritems():
             keys = object_map.keys()
-            refs = list(set([dbref for dbref in dbrefs if str(dbref) not in keys]))
+            refs = list(set(
+                [dbref for dbref in dbrefs if str(dbref) not in keys]))
             if hasattr(col, 'objects'):  # We have a document class for the refs
                 references = col.objects.in_bulk(refs)
                 for key, doc in references.iteritems():
                     object_map[key] = doc
             else:  # Generic reference: use the refs data to convert to document
-                if doc_type and not isinstance(doc_type, (ListField, DictField, MapField,) ):
-                    references = doc_type._get_db()[col].find({'_id': {'$in': refs}})
+                if doc_type and \
+                        not isinstance(doc_type, (ListField, DictField, MapField,)):  # noqa
+                    references = doc_type._get_db()[col].find(
+                        {'_id': {'$in': refs}})
                     for ref in references:
                         doc = doc_type._from_son(ref)
                         object_map[doc.id] = doc
@@ -170,13 +181,18 @@ class DeReference(object):
                     if isinstance(v, (DBRef)):
                         data[k]._data[field_name] = self.object_map.get(v.id, v)
                     elif isinstance(v, (dict, SON)) and '_ref' in v:
-                        data[k]._data[field_name] = self.object_map.get(v['_ref'].id, v)
+                        data[k]._data[field_name] = \
+                            self.object_map.get(v['_ref'].id, v)
                     elif isinstance(v, dict) and depth <= self.max_depth:
-                        data[k]._data[field_name] = self._attach_objects(v, depth, instance=instance, name=name)
-                    elif isinstance(v, (list, tuple)) and depth <= self.max_depth:
-                        data[k]._data[field_name] = self._attach_objects(v, depth, instance=instance, name=name)
+                        data[k]._data[field_name] = self._attach_objects(
+                            v, depth, instance=instance, name=name)
+                    elif isinstance(v, (list, tuple)) and \
+                            depth <= self.max_depth:
+                        data[k]._data[field_name] = self._attach_objects(
+                            v, depth, instance=instance, name=name)
             elif isinstance(v, (dict, list, tuple)) and depth <= self.max_depth:
-                data[k] = self._attach_objects(v, depth - 1, instance=instance, name=name)
+                data[k] = self._attach_objects(
+                    v, depth - 1, instance=instance, name=name)
             elif hasattr(v, 'id'):
                 data[k] = self.object_map.get(v.id, v)
 

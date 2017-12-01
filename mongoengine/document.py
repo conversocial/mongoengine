@@ -8,7 +8,8 @@ from queryset import OperationError
 from connection import get_db, DEFAULT_CONNECTION_NAME
 
 __all__ = ['Document', 'EmbeddedDocument', 'DynamicDocument',
-           'DynamicEmbeddedDocument', 'OperationError', 'InvalidCollectionError']
+           'DynamicEmbeddedDocument', 'OperationError',
+           'InvalidCollectionError']
 
 
 class InvalidCollectionError(Exception):
@@ -81,6 +82,7 @@ class Document(BaseDocument):
         """
         def fget(self):
             return getattr(self, self._meta['id_field'])
+
         def fset(self, value):
             return setattr(self, self._meta['id_field'], value)
         return property(fget, fset)
@@ -88,7 +90,7 @@ class Document(BaseDocument):
     @classmethod
     def _get_db(cls):
         """Some Model using other db_alias"""
-        return get_db(cls._meta.get("db_alias", DEFAULT_CONNECTION_NAME ))
+        return get_db(cls._meta.get("db_alias", DEFAULT_CONNECTION_NAME))
 
     @classmethod
     def _get_subdocuments(cls):
@@ -122,7 +124,8 @@ class Document(BaseDocument):
                     if options.get('max') != max_documents or \
                        options.get('size') != max_size:
                         msg = ('Cannot create collection "%s" as a capped '
-                               'collection as it already exists') % cls._collection
+                               'collection as it already exists'
+                               % cls._collection)
                         raise InvalidCollectionError(msg)
                 else:
                     # Create the collection as a capped collection
@@ -139,7 +142,7 @@ class Document(BaseDocument):
         return cls._collection
 
     def save(self, force_insert=False, validate=True, write_options=None,
-            cascade=None, cascade_kwargs=None, _refs=None):
+             cascade=None, cascade_kwargs=None, _refs=None):
         """Save the :class:`~mongoengine.Document` to the database. If the
         document already exists, it will be updated, otherwise it will be
         created.
@@ -150,12 +153,15 @@ class Document(BaseDocument):
         :param write_options: Extra keyword arguments are passed down to
                 :meth:`~pymongo.collection.Collection.save` OR
                 :meth:`~pymongo.collection.Collection.insert`
-                which will be used as options for the resultant ``getLastError`` command.
-                For example, ``save(..., w=2, fsync=True)`` will wait until at least two servers
-                have recorded the write and will force an fsync on each server being written to.
-        :param cascade: Sets the flag for cascading saves.  You can set a default by setting
-            "cascade" in the document __meta__
-        :param cascade_kwargs: optional kwargs dictionary to be passed throw to cascading saves
+                which will be used as options for the resultant
+                ``getLastError`` command.
+                For example, ``save(..., w=2, fsync=True)`` will wait until at
+                least two servers have recorded the write and will force an
+                fsync on each server being written to.
+        :param cascade: Sets the flag for cascading saves.  You can set a
+            default by setting "cascade" in the document __meta__
+        :param cascade_kwargs: optional kwargs dictionary to be passed throw
+            to cascading saves
         :param _refs: A list of processed references used in cascading saves
 
         .. versionchanged:: 0.5
@@ -163,11 +169,12 @@ class Document(BaseDocument):
             Saves are cascaded and any :class:`~bson.dbref.DBRef` objects
             that have changes are saved as well.
         .. versionchanged:: 0.6
-            Cascade saves are optional = defaults to True, if you want fine grain
-            control then you can turn off using document meta['cascade'] = False
-            Also you can pass different kwargs to the cascade save using cascade_kwargs
-            which overwrites the existing kwargs with custom values
-
+            Cascade saves are optional = defaults to True, if you want fine
+            grain control then you can turn off using document
+            meta['cascade'] = False
+            Also you can pass different kwargs to the cascade save using
+            cascade_kwargs which overwrites the existing kwargs with custom
+            values
         """
         signals.pre_save.send(self.__class__, document=self)
 
@@ -201,11 +208,17 @@ class Document(BaseDocument):
 
                 upsert = self._created
                 if updates:
-                    collection.update(select_dict, {"$set": updates}, upsert=upsert, **write_options)
+                    collection.update(select_dict,
+                                      {"$set": updates},
+                                      upsert=upsert,
+                                      **write_options)
                 if removals:
-                    collection.update(select_dict, {"$unset": removals}, upsert=upsert, **write_options)
+                    collection.update(select_dict,
+                                      {"$unset": removals},
+                                      upsert=upsert,
+                                      **write_options)
 
-            cascade = self._meta.get('cascade', True) if cascade is None else cascade
+            cascade = self._meta.get('cascade', True) if cascade is None else cascade  # noqa
             if cascade:
                 kwargs = {
                     "force_insert": force_insert,
@@ -419,8 +432,8 @@ class MapReduceDocument(object):
             try:
                 self.key = id_field_type(self.key)
             except:
-                raise Exception("Could not cast key as %s" % \
-                                id_field_type.__name__)
+                raise Exception(
+                    "Could not cast key as %s" % id_field_type.__name__)
 
         if not hasattr(self, "_key_object"):
             self._key_object = self._document.objects.with_id(self.key)

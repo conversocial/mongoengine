@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from mongoengine import *
+from mongoengine import connect, Document, StringField
 from mongoengine import signals
 from mongoengine.connection import register_db
 
@@ -23,6 +23,7 @@ class SignalTests(unittest.TestCase):
     def setUp(self):
         connect()
         register_db('mongoenginetest')
+
         class Author(Document):
             name = StringField()
 
@@ -72,7 +73,6 @@ class SignalTests(unittest.TestCase):
                     signal_output.append('Not loaded')
         self.Author = Author
 
-
         class Another(Document):
             name = StringField()
 
@@ -81,7 +81,8 @@ class SignalTests(unittest.TestCase):
 
             @classmethod
             def pre_init(cls, sender, document, **kwargs):
-                signal_output.append('pre_init Another signal, %s' % cls.__name__)
+                signal_output.append(
+                    'pre_init Another signal, %s' % cls.__name__)
                 signal_output.append(str(kwargs['values']))
 
             @classmethod
@@ -107,11 +108,12 @@ class SignalTests(unittest.TestCase):
 
             @classmethod
             def post_delete(cls, sender, document, **kwargs):
-                signal_output.append('post_delete Another signal, %s' % document)
+                signal_output.append(
+                    'post_delete Another signal, %s' % document)
 
         self.Another = Another
-        # Save up the number of connected signals so that we can check at the end
-        # that all the signals we register get properly unregistered
+        # Save up the number of connected signals so that we can check at
+        # the end that all the signals we register get properly unregistered
         self.pre_signals = (
             len(signals.pre_init.receivers),
             len(signals.post_init.receivers),
@@ -174,7 +176,7 @@ class SignalTests(unittest.TestCase):
         """ Model saves should throw some signals. """
 
         def create_author():
-            a1 = self.Author(name='Bill Shakespeare')
+            self.Author(name='Bill Shakespeare')
 
         def bulk_create_author_with_load():
             a1 = self.Author(name='Bill Shakespeare')
@@ -198,7 +200,7 @@ class SignalTests(unittest.TestCase):
         ])
 
         a1.reload()
-        a1.name='William Shakespeare'
+        a1.name = 'William Shakespeare'
         self.assertEqual(self.get_signal_output(a1.save), [
             "pre_save signal, William Shakespeare",
             "post_save signal, William Shakespeare",
@@ -214,19 +216,25 @@ class SignalTests(unittest.TestCase):
 
         # The output of this signal is not entirely deterministic. The reloaded
         # object will have an object ID. Hence, we only check part of the output
-        self.assertEquals(signal_output[3],
+        self.assertEquals(
+            signal_output[3],
             "pre_bulk_insert signal, [<Author: Bill Shakespeare>]")
-        self.assertEquals(signal_output[-2:],
+        self.assertEquals(
+            signal_output[-2:],
             ["post_bulk_insert signal, [<Author: Bill Shakespeare>]",
-             "Is loaded",])
+             "Is loaded"])
 
-        self.assertEqual(self.get_signal_output(bulk_create_author_without_load), [
-            "pre_init signal, Author",
-            "{'name': 'Bill Shakespeare'}",
-            "post_init signal, Bill Shakespeare",
-            "pre_bulk_insert signal, [<Author: Bill Shakespeare>]",
-            "post_bulk_insert signal, [<Author: Bill Shakespeare>]",
-            "Not loaded",
-        ])
+        self.assertEqual(
+            self.get_signal_output(bulk_create_author_without_load),
+            ["pre_init signal, Author",
+             "{'name': 'Bill Shakespeare'}",
+             "post_init signal, Bill Shakespeare",
+             "pre_bulk_insert signal, [<Author: Bill Shakespeare>]",
+             "post_bulk_insert signal, [<Author: Bill Shakespeare>]",
+             "Not loaded"])
 
         self.Author.objects.delete()
+
+
+if __name__ == '__main__':
+    unittest.main()
