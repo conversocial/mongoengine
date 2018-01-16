@@ -2479,6 +2479,21 @@ class DocumentTest(unittest.TestCase):
         self.assertTrue(a != b)
         self.assertTrue(a != somethingElse)
 
+    def test_abstract_document_with_shard_key(self):
+        class AbstractShardedDocument(Document):
+            meta = {'abstract': True,
+                    'shard_key': ('shard',)}
+            shard = StringField(required=True)
+
+        class Animal(AbstractShardedDocument):
+            name = StringField(required=True)
+
+        a = Animal(shard='eu', name='Kenneth')
+        a.save()
+
+        b = Animal(name='No shard specified!')
+        with self.assertRaises(ValidationError):
+            b.save()
 
 if __name__ == '__main__':
     unittest.main()
