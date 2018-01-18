@@ -2479,21 +2479,155 @@ class DocumentTest(unittest.TestCase):
         self.assertTrue(a != b)
         self.assertTrue(a != somethingElse)
 
+
+class ShardedDocumentTest(unittest.TestCase):
+    def setUp(self):
+        connect('default', port=27217)
+        register_db('mongoenginetest')
+        self.db = get_db()
+
+        class ShardedPerson(Document):
+            region = StringField()
+            name = StringField()
+            age = IntField()
+
+            meta = {'allow_inheritance': True,
+                    'shard_key': ('region',)}
+        self.ensure_sharded(ShardedPerson)
+        self.ShardedPerson = ShardedPerson
+
+    def tearDown(self):
+        self.ShardedPerson.drop_collection()
+
+    def ensure_sharded(self, model):
+        """
+        Ensures a model's collection has an index on its shard_key and is
+        sharded
+        """
+        from collections import OrderedDict
+
+        assert isinstance(model.meta.get("shard_key", None), tuple), \
+            "You must specify %s.meta['shard_key']. It should be a tuple " \
+            "of the fields comprising the shard key." % model.__name__
+
+        index = [(field, pymongo.ASCENDING)
+                 for field in model.meta["shard_key"]]
+
+        collection = model.objects._collection
+        collection.ensure_index(index, unique=False, background=True)
+
+        connection = collection.database.client
+        database_name = collection.database.name
+        try:
+            self.ensure_sharding_enabled_on_database(database_name, connection)
+            success = connection.admin.command(
+                "shardCollection",
+                '%s.%s' % (database_name, collection.name),
+                key=OrderedDict(index),
+                unique=False)
+            return bool(success['ok'])
+        except pymongo.errors.OperationFailure as e:
+            if self.collection_is_already_sharded(e):
+                self.ensure_collection_shard_key_correct(
+                    connection, database_name,
+                    collection.name, index, False)
+                return True
+            if self.no_such_command(e):  # Not a mongos
+                return True
+            raise
+
+    def ensure_sharding_enabled_on_database(self, database_name, connection):
+        try:
+            connection.admin.command("enableSharding", database_name)
+        except pymongo.errors.OperationFailure as e:
+            if self.sharding_is_already_enabled(e):
+                pass
+            else:
+                raise
+
+    def sharding_is_already_enabled(self, e):
+        return "sharding already enabled" in str(e)
+
+    def collection_is_already_sharded(self, e):
+        """
+        MongoDB seems to return one of two errors when a collection is already
+        sharded. Either:
+        1. collection DB_NAME.COLLECTION_NAME already sharded with 123 chunks
+        2. sharding already enabled for collection DB_NAME.COLLECTION_NAME
+        """
+        return self.sharding_is_already_enabled(e) or \
+            "already sharded" in str(e)
+
+    def no_such_command(self, e):
+        return "no such cmd" in str(e) or "no such command" in str(e)
+
+    def ensure_collection_shard_key_correct(
+            self, connection, database_name, collection_name, expected_index,
+            expected_unique):
+        """
+        When a collection is already sharded this function will check that the
+        in-use shard key matches expectations.
+        """
+        from collections import OrderedDict
+
+        config_db = connection.config
+        collection_info = config_db.collections.find_one({
+            "_id": '%s.%s' % (database_name, collection_name),
+            "dropped": False})
+
+        expected_index_dict = OrderedDict(expected_index)
+
+        if collection_info["key"] == expected_index_dict:
+            if collection_info["unique"] == expected_unique:
+                return True
+
+        raise Exception(
+            "Expected to find %s as shard key for collection %s" % (
+                {"key": expected_index_dict, "unique": expected_unique},
+                collection_info))
+
+    def test_fails_to_create_sharded_doc_without_shard_key(self):
+        person = self.ShardedPerson(name='jandres')
+        with self.assertRaises(OperationError):
+            person.save()
+
+    def test_reload_sharded(self):
+        """Duplicate of test above with an actually sharded collection"""
+        author = self.ShardedPerson(region='eu', name='dcrosta')
+        author.save()
+        author.reload()
+
     def test_abstract_document_with_shard_key(self):
         class AbstractShardedDocument(Document):
             meta = {'abstract': True,
                     'shard_key': ('shard',)}
-            shard = StringField(required=True)
+            shard = StringField()
 
         class Animal(AbstractShardedDocument):
             name = StringField(required=True)
 
-        a = Animal(shard='eu', name='Kenneth')
-        a.save()
+        self.assertEqual(Animal.meta['shard_key'], ('shard',))
 
-        b = Animal(name='No shard specified!')
-        with self.assertRaises(ValidationError):
-            b.save()
+    def test_sharded_document_update(self):
+        author = self.ShardedPerson(region='eu', name='dcrosta')
+        author.save()
+
+        author.update(set__name='Dan Crosta')
+        author.reload()
+
+        p1 = self.ShardedPerson.objects.first()
+        self.assertEquals(p1.name, author.name)
+
+        self.ShardedPerson.drop_collection()
+
+    def test_sharded_document_delete(self):
+        """Ensure that document may be deleted using the delete method."""
+        person = self.ShardedPerson(region='eu', name="Test User", age=30)
+        person.save()
+        self.assertEqual(len(self.ShardedPerson.objects), 1)
+        person.delete()
+        self.assertEqual(len(self.ShardedPerson.objects), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
