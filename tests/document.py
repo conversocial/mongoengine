@@ -2492,12 +2492,17 @@ class ShardedDocumentTest(unittest.TestCase):
             age = IntField()
 
             meta = {'allow_inheritance': True,
-                    'shard_key': ('region',)}
+                    'shard_key': ('region', '_id',)}
+        self.allow_tablescans(ShardedPerson)
         self.ensure_sharded(ShardedPerson)
         self.ShardedPerson = ShardedPerson
 
     def tearDown(self):
         self.ShardedPerson.drop_collection()
+
+    def allow_tablescans(self, model):
+        model.objects._collection.ensure_index([('_cls', pymongo.ASCENDING)],
+                                               background=True)
 
     def ensure_sharded(self, model):
         """

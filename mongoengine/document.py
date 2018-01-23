@@ -267,7 +267,10 @@ class Document(BaseDocument):
         select_dict = {'pk': self.pk}
         shard_key = self.__class__._meta.get('shard_key', tuple())
         for k in shard_key:
-            select_dict[k] = getattr(self, k)
+            if k == '_id':
+                select_dict['id'] = getattr(self, 'id')
+            else:
+                select_dict[k] = getattr(self, k)
         return select_dict
 
     def update(self, **kwargs):
