@@ -2593,13 +2593,18 @@ class ShardedDocumentTest(unittest.TestCase):
 
     def test_fails_to_create_sharded_doc_without_shard_key(self):
         person = self.ShardedPerson(name='jandres')
-        with self.assertRaises(OperationError):
+        with self.assertRaises(OperationError) as cm:
             person.save()
+        self.assertIn('does not contain shard key', str(cm.exception))
 
     def test_reload_sharded(self):
         """Duplicate of test above with an actually sharded collection"""
         author = self.ShardedPerson(region='eu', name='dcrosta')
         author.save()
+        author.reload()
+        # Sanity check that reload doesn't leave debris thereby blocking a
+        # subsequent reload. We have no proof this would be the case, it's
+        # just the usual paranoia.
         author.reload()
 
     def test_abstract_document_with_shard_key(self):
@@ -2622,8 +2627,6 @@ class ShardedDocumentTest(unittest.TestCase):
 
         p1 = self.ShardedPerson.objects.first()
         self.assertEquals(p1.name, author.name)
-
-        self.ShardedPerson.drop_collection()
 
     def test_sharded_document_delete(self):
         """Ensure that document may be deleted using the delete method."""
