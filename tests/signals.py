@@ -3,15 +3,14 @@ import unittest
 
 from mongoengine import connect, Document, StringField
 from mongoengine import signals
-from mongoengine.connection import register_db
+from mongoengine.connection import register_db, disconnect
 
 signal_output = []
 
 
-class SignalTests(unittest.TestCase):
-    """
-    Testing signals before/after saving and deleting.
-    """
+class BaseSignalTests(unittest.TestCase):
+
+    maxDiff = None
 
     def get_signal_output(self, fn, *args, **kwargs):
         # Flush any existing signal output
@@ -19,6 +18,75 @@ class SignalTests(unittest.TestCase):
         signal_output = []
         fn(*args, **kwargs)
         return signal_output
+
+
+class ConnectSignalTests(BaseSignalTests):
+    """
+    Testing signals before/after connecting.
+    """
+
+    def setUp(self):
+        # Save up the number of connected signals so that we can check at
+        # the end that all the signals we register get properly unregistered
+        self.pre_signals = (
+            len(signals.pre_connect.receivers),
+            len(signals.post_connect.receivers),
+        )
+
+        self.pre_connect = lambda sender, settings: signal_output.append(
+            'pre_connect: sender={sender} settings={settings!r}'.format(
+                sender=sender,
+                settings=sorted(settings.keys()),
+            )
+        )
+        self.post_connect = lambda sender, settings, connection: signal_output.append(
+            'post_connect: sender={sender} settings={settings!r} connection={connection!r}'.format(
+                sender=sender,
+                settings=sorted(settings.keys()),
+                connection=type(connection),
+            )
+        )
+        signals.pre_connect.connect(self.pre_connect)
+        signals.post_connect.connect(self.post_connect)
+
+        # make sure we're not connected already
+        disconnect()
+        disconnect('nondefault')
+
+    def tearDown(self):
+        signals.pre_connect.disconnect(self.pre_connect)
+        signals.post_connect.disconnect(self.post_connect)
+        # Check that all our signals got disconnected properly.
+        post_signals = (
+            len(signals.pre_connect.receivers),
+            len(signals.post_connect.receivers),
+        )
+        self.assertEqual(self.pre_signals, post_signals)
+
+    def test_new_connection(self):
+        """ Call to connect() should fire the pre/post signals. """
+        self.assertEqual(self.get_signal_output(connect), [
+            "pre_connect: sender=default settings=['host', 'port', 'read_preference']",
+            "post_connect: sender=default settings=['host', 'port', 'read_preference'] connection=<class 'pymongo.mongo_client.MongoClient'>",
+        ])
+        self.assertEqual(self.get_signal_output(connect, 'nondefault'), [
+            "pre_connect: sender=nondefault settings=['host', 'port', 'read_preference']",
+            "post_connect: sender=nondefault settings=['host', 'port', 'read_preference'] connection=<class 'pymongo.mongo_client.MongoClient'>",
+        ])
+
+    def test_unknown_alias_connection(self):
+        """ Call to connect() should not fire the pre/post signals for unknown db alias. """
+
+    def test_already_connected(self):
+        """ Repeat call to connect() should not fire the pre/post signals. """
+        connect()
+        self.assertEqual(self.get_signal_output(connect), [])
+
+
+class DocumentSignalTests(BaseSignalTests):
+    """
+    Testing signals before/after saving and deleting.
+    """
 
     def setUp(self):
         connect()
