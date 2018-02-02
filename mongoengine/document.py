@@ -260,6 +260,19 @@ class Document(BaseDocument):
                 ref.save(**kwargs)
                 ref._changed_fields = []
 
+    @property
+    def _object_key(self):
+        """Dict to identify object in collection
+        """
+        select_dict = {'pk': self.pk}
+        shard_key = self.__class__._meta.get('shard_key', tuple())
+        for k in shard_key:
+            if k == '_id':
+                select_dict['id'] = getattr(self, 'id')
+            else:
+                select_dict[k] = getattr(self, k)
+        return select_dict
+
     def update(self, **kwargs):
         """Performs an update on the :class:`~mongoengine.Document`
         A convenience wrapper to :meth:`~mongoengine.QuerySet.update`.
@@ -271,11 +284,7 @@ class Document(BaseDocument):
             raise OperationError('attempt to update a document not yet saved')
 
         # Need to add shard key to query, or you get an error
-        select_dict = {'pk': self.pk}
-        shard_key = self.__class__._meta.get('shard_key', tuple())
-        for k in shard_key:
-            select_dict[k] = getattr(self, k)
-        return self.__class__.objects(**select_dict).update_one(**kwargs)
+        return self.__class__.objects(**self._object_key).update_one(**kwargs)
 
     def delete(self, w=1):
         """Delete the :class:`~mongoengine.Document` from the database. This
@@ -284,7 +293,7 @@ class Document(BaseDocument):
         signals.pre_delete.send(self.__class__, document=self)
 
         try:
-            self.__class__.objects(pk=self.pk).delete(w=w)
+            self.__class__.objects(**self._object_key).delete(w=w)
         except pymongo.errors.OperationFailure, err:
             message = u'Could not delete document (%s)' % err.message
             raise OperationError(message)
@@ -307,10 +316,7 @@ class Document(BaseDocument):
         .. versionadded:: 0.1.2
         .. versionchanged:: 0.6  Now chainable
         """
-        id_field = self._meta['id_field']
-        obj = self.__class__.objects(
-            **{id_field: self[id_field]}
-        ).first()
+        obj = self.__class__.objects(**self._object_key).first()
         for field in self._fields:
             setattr(self, field, self._reload(field, obj[field]))
         if self._dynamic:

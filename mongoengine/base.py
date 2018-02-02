@@ -687,7 +687,7 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
                     collection = base._get_collection_name()
                 # Propagate index options.
                 for key in ('index_background', 'index_drop_dups',
-                            'index_opts'):
+                            'index_opts', 'shard_key'):
                     if key in base._meta:
                         base_meta[key] = base._meta[key]
 
@@ -837,7 +837,7 @@ class BaseDocument(object):
                 self._mark_as_changed(name)
             return
 
-        if not self._created and name in self._meta.get('shard_key', tuple()):
+        if not self._created and name in self._meta.get('shard_key', tuple()) and self._data[name] != value:
             from queryset import OperationError
             raise OperationError(
                 "Shard Keys are immutable. Tried to update %s" % name)
