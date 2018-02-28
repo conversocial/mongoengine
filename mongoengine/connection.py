@@ -2,6 +2,8 @@ import pymongo
 from pymongo import MongoClient, uri_parser
 from pymongo.read_preferences import ReadPreference
 
+import signals
+
 
 __all__ = ['ConnectionError', 'connect', 'register_connection',
            'DEFAULT_CONNECTION_NAME']
@@ -106,7 +108,9 @@ def get_connection(alias=DEFAULT_CONNECTION_NAME, reconnect=False):
                 conn_settings.pop('read_preference')
 
         try:
+            signals.pre_connect.send(alias, settings=conn_settings)
             _connections[alias] = MongoClient(**conn_settings)
+            signals.post_connect.send(alias, settings=conn_settings, connection=_connections[alias])
         except Exception, e:
             raise ConnectionError(
                 "Cannot connect to database %s :\n%s" % (alias, e))
