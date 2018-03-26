@@ -19,6 +19,7 @@ from mongoengine import (
 from mongoengine.base import NotRegistered, InvalidDocumentError
 from mongoengine.queryset import InvalidQueryError
 from mongoengine.connection import get_db, register_db
+from mongoengine import signals
 
 
 class DocumentTest(unittest.TestCase):
@@ -2022,6 +2023,193 @@ class DocumentTest(unittest.TestCase):
         # Delete the Person, which should lead to deletion of the BlogPost, too
         author.delete()
         self.assertEqual(len(BlogPost.objects), 0)
+
+    def test_shallow_cascade_triggers_pre_delete_signal(self):
+        class Editor(self.Person):
+            review_queue = IntField(default=0)
+
+        class BlogPost(Document):
+            content = StringField()
+            author = ReferenceField(self.Person, reverse_delete_rule=CASCADE)
+            editor = ReferenceField(Editor)
+
+            @classmethod
+            def pre_delete(cls, sender, document, **kwargs):
+                document.editor.update(dec__review_queue=1)
+
+        signals.pre_delete.connect(BlogPost.pre_delete, sender=BlogPost)
+
+        self.Person.drop_collection()
+        BlogPost.drop_collection()
+        Editor.drop_collection()
+
+        author = self.Person(name='Will S.')
+        author.save()
+        editor = Editor(name='Max P.', review_queue=1)
+        editor.save()
+        BlogPost(content='wrote some books', author=author,
+                 editor=editor).save()
+
+        author.delete()
+        self.assertEqual(BlogPost.objects.all().count(), 0)
+        editor = Editor.objects(name='Max P.').get()
+        self.assertEqual(editor.review_queue, 0)
+
+    def test_shallow_cascade_triggers_post_delete_signal(self):
+
+        class Editor(self.Person):
+            review_queue = IntField(default=0)
+
+        class BlogPost(Document):
+            content = StringField()
+            author = ReferenceField(self.Person, reverse_delete_rule=CASCADE)
+            editor = ReferenceField(Editor)
+
+            @classmethod
+            def post_delete(cls, sender, document, **kwargs):
+                document.editor.update(dec__review_queue=1)
+
+        signals.post_delete.connect(BlogPost.post_delete, sender=BlogPost)
+
+        self.Person.drop_collection()
+        BlogPost.drop_collection()
+        Editor.drop_collection()
+
+        author = self.Person(name='Will S.')
+        author.save()
+        editor = Editor(name='Max P.', review_queue=1)
+        editor.save()
+        BlogPost(content='wrote some books', author=author,
+                 editor=editor).save()
+
+        author.delete()
+        self.assertEqual(BlogPost.objects.all().count(), 0)
+        editor = Editor.objects(name='Max P.').get()
+        self.assertEqual(editor.review_queue, 0)
+
+    def test_mid_cascade_signal_triggered_on_deep_delete(self):
+        class Editor(self.Person):
+            review_queue = IntField(default=0)
+
+        class BlogPost(Document):
+            content = StringField()
+            author = ReferenceField(self.Person, reverse_delete_rule=CASCADE)
+            editor = ReferenceField(Editor)
+
+            @classmethod
+            def post_delete(cls, sender, document, **kwargs):
+                # decrement the docs-to-review count
+                document.editor.update(dec__review_queue=1)
+
+        class Comment(Document):
+            blogpost = ReferenceField(BlogPost, reverse_delete_rule=CASCADE)
+
+        signals.post_delete.connect(BlogPost.post_delete, sender=BlogPost)
+
+        self.Person.drop_collection()
+        BlogPost.drop_collection()
+        Editor.drop_collection()
+
+        author = self.Person(name='Will S.')
+        author.save()
+        editor = Editor(name='Max P.', review_queue=1)
+        editor.save()
+        BlogPost(content='wrote some books', author=author,
+                 editor=editor).save()
+
+        author.delete()
+        self.assertEqual(BlogPost.objects.all().count(), 0)
+        editor = Editor.objects(name='Max P.').get()
+        self.assertEqual(editor.review_queue, 0)
+
+    def test_delete_hooks_trigger_through_deep_cascades(self):
+
+        class Editor(self.Person):
+            comments_to_review = IntField(default=0)
+            review_queue = IntField(default=0)
+
+        class BlogPost(Document):
+            content = StringField()
+            author = ReferenceField(self.Person, reverse_delete_rule=CASCADE)
+            editor = ReferenceField(Editor)
+
+            @classmethod
+            def pre_delete(cls, sender, document, **kwargs):
+                document.editor.update(dec__review_queue=1)
+
+        class Comment(Document):
+            blogpost = ReferenceField(BlogPost, reverse_delete_rule=CASCADE)
+
+            @classmethod
+            def pre_delete(cls, sender, document, **kwargs):
+                document.blogpost.editor.update(dec__comments_to_review=1)
+
+        signals.pre_delete.connect(BlogPost.pre_delete, sender=BlogPost)
+        signals.pre_delete.connect(Comment.pre_delete, sender=Comment)
+
+        self.Person.drop_collection()
+        BlogPost.drop_collection()
+        Editor.drop_collection()
+
+        author = self.Person(name='Will S.')
+        author.save()
+        editor = Editor(name='Max P.', review_queue=1, comments_to_review=1)
+        editor.save()
+        blogpost = BlogPost(content='wrote some books', author=author,
+                            editor=editor)
+        blogpost.save()
+        Comment(blogpost=blogpost).save()
+
+        author.delete()
+
+        self.assertEqual(BlogPost.objects.all().count(), 0)
+        self.assertEqual(Comment.objects.all().count(), 0)
+        editor = Editor.objects(name='Max P.').get()
+        self.assertEqual(editor.review_queue, 0)
+        self.assertEqual(editor.comments_to_review, 0)
+
+    def test_leaf_delete_hooks_trigger_with_no_parent_trigger(self):
+
+        class Editor(self.Person):
+            comments_to_review = IntField(default=0)
+
+        class BlogPost(Document):
+            content = StringField()
+            author = ReferenceField(self.Person, reverse_delete_rule=CASCADE)
+            editor = ReferenceField(Editor)
+
+        class Comment(Document):
+            blogpost = ReferenceField(BlogPost, reverse_delete_rule=CASCADE)
+
+            @classmethod
+            def pre_delete(cls, sender, document, **kwargs):
+                # decrement the comments-to-review count
+                document.blogpost.editor.update(dec__comments_to_review=1)
+
+        signals.pre_delete.connect(Comment.pre_delete, sender=Comment)
+
+        self.Person.drop_collection()
+        BlogPost.drop_collection()
+        Editor.drop_collection()
+
+        author = self.Person(name='Will S.')
+        author.save()
+        editor = Editor(name='Max P.', comments_to_review=1)
+        editor.save()
+        blogpost = BlogPost(content='wrote some books', author=author,
+                            editor=editor)
+        blogpost.save()
+
+        Comment(blogpost=blogpost).save()
+
+        # delete the author, the post is also deleted due to the CASCADE rule
+        author.delete()
+
+        self.assertEqual(BlogPost.objects.all().count(), 0)
+        self.assertEqual(Comment.objects.all().count(), 0)
+        # the pre-delete signal should have decremented the editor's queue
+        editor = Editor.objects(name='Max P.').get()
+        self.assertEqual(editor.comments_to_review, 0)
 
     def test_invalid_reverse_delete_rules_raise_errors(self):
 

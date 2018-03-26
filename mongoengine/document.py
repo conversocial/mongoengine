@@ -4,7 +4,7 @@ from bson.dbref import DBRef
 from mongoengine import signals
 from base import (DocumentMetaclass, TopLevelDocumentMetaclass, BaseDocument,
                   BaseDict, BaseList)
-from queryset import OperationError
+from queryset import OperationError, QuerySet
 from connection import get_db, DEFAULT_CONNECTION_NAME
 
 __all__ = ['Document', 'EmbeddedDocument', 'DynamicDocument',
@@ -286,6 +286,16 @@ class Document(BaseDocument):
         # Need to add shard key to query, or you get an error
         return self.__class__.objects(**self._object_key).update_one(**kwargs)
 
+
+    @property
+    def _qs(self):
+        """
+        Returns the queryset to use for updating / reloading / deletions
+        """
+        if not hasattr(self, '__objects'):
+            self.__objects = QuerySet(self, self._get_collection())
+        return self.__objects
+
     def delete(self, w=1):
         """Delete the :class:`~mongoengine.Document` from the database. This
         will only take effect if the document has been previously saved.
@@ -293,7 +303,8 @@ class Document(BaseDocument):
         signals.pre_delete.send(self.__class__, document=self)
 
         try:
-            self.__class__.objects(**self._object_key).delete(w=w)
+            self._qs.filter(**self._object_key).delete(
+                w=w, _from_doc_delete=True)
         except pymongo.errors.OperationFailure, err:
             message = u'Could not delete document (%s)' % err.message
             raise OperationError(message)

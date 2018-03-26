@@ -367,7 +367,7 @@ class QuerySet(object):
 
         for prop in copy_props:
             val = getattr(self, prop)
-            setattr(c, prop, copy.deepcopy(val))
+            setattr(c, prop, copy.copy(val))
 
         return c
 
@@ -1216,16 +1216,27 @@ class QuerySet(object):
         self._read_preference = read_preference
         return self
 
-    def delete(self, w=1):
+    def delete(self, w=1, _from_doc_delete=False):
         """Delete the documents matched by the query.
         """
-        doc = self._document
+        queryset = self.clone()
+
+        # This is taken from actual MongoEngine, url
+        # https://github.com/MongoEngine/mongoengine/pull/105
+        has_delete_signal = (
+            signals.pre_delete.has_receivers_for(self._document) or
+            signals.post_delete.has_receivers_for(self._document))
+
+        if has_delete_signal and not _from_doc_delete:
+            for d in queryset:
+                d.delete()
+            return
 
         # Check for DENY rules before actually deleting/nullifying any other
         # references
-        for rule_entry in doc._meta['delete_rules']:
+        for rule_entry in queryset._document._meta['delete_rules']:
             document_cls, field_name = rule_entry
-            rule = doc._meta['delete_rules'][rule_entry]
+            rule = queryset._document._meta['delete_rules'][rule_entry]
             if rule == DENY \
                     and document_cls.objects(**{field_name + '__in': self}).count() > 0:  # noqa
                 msg = \
@@ -1233,15 +1244,15 @@ class QuerySet(object):
                     % (document_cls.__name__, field_name)
                 raise OperationError(msg)
 
-        for rule_entry in doc._meta['delete_rules']:
+        for rule_entry in queryset._document._meta['delete_rules']:
             document_cls, field_name = rule_entry
-            rule = doc._meta['delete_rules'][rule_entry]
+            rule = queryset._document._meta['delete_rules'][rule_entry]
             if rule == CASCADE:
                 document_cls.objects(**{field_name + '__in': self}).delete(w=w)
             elif rule == NULLIFY:
                 document_cls.objects(**{field_name + '__in': self}).update(
-                        w=w,
-                        **{'unset__%s' % field_name: 1})
+                    w=w,
+                    **{'unset__%s' % field_name: 1})
 
         self._collection.remove(self._query, w=w)
 
