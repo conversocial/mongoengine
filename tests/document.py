@@ -754,6 +754,13 @@ class DocumentTest(unittest.TestCase):
         self.assertEquals(len(doc.embedded_field.list_field), 4)
         self.assertEquals(len(doc.embedded_field.dict_field), 2)
 
+    def test_reload_deleted_document_raises_doesnotexist(self):
+        person = self.Person(name="Test User", age=20)
+        person.save()
+        person.delete()
+        with self.assertRaises(self.Person.DoesNotExist):
+            person.reload()
+
     def test_dictionary_access(self):
         """Ensure that dictionary-style field access works properly.
         """

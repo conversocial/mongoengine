@@ -328,6 +328,9 @@ class Document(BaseDocument):
         .. versionchanged:: 0.6  Now chainable
         """
         obj = self.__class__.objects(**self._object_key).first()
+        if obj is None:
+            raise self.DoesNotExist('Document does not exist')
+
         for field in self._fields:
             setattr(self, field, self._reload(field, obj[field]))
         if self._dynamic:
