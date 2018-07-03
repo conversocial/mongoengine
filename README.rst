@@ -80,8 +80,9 @@ Some simple examples of what MongoEngine code looks like::
 
 Tests
 =====
-To run the test suite, ensure you are running a local instance of MongoDB on
-the standard port, and run ``python setup.py test``.
+- Ensure you are running a local instance of MongoDB on the standard port
+- Ensure you have ``tox`` installed (``pip install tox``)
+- Run ``tox``
 
 Community
 =========
