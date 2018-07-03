@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function
 
 import pickle
 import pymongo
+import six
 import bson
 import unittest
 import warnings
@@ -2560,6 +2561,7 @@ class DocumentTest(unittest.TestCase):
         class User(Document):
             name = StringField()
 
+        @six.python_2_unicode_compatible
         class Book(Document):
             name = StringField()
             author = ReferenceField(User)
@@ -2567,9 +2569,6 @@ class DocumentTest(unittest.TestCase):
             meta = {
                 'ordering': ['+name']
             }
-
-            def __unicode__(self):
-                return self.name
 
             def __str__(self):
                 return self.name
@@ -2611,33 +2610,34 @@ class DocumentTest(unittest.TestCase):
 
         # Checks
         self.assertEqual(
-            u",".join([str(b) for b in Book.objects.all()]),
-            "1,2,3,4,5,6,7,8,9")
+            u','.join([six.text_type(b) for b in Book.objects.all()]),
+            u'1,2,3,4,5,6,7,8,9')
         # bob related books
         self.assertEqual(
-            u",".join([str(b) for b in
-                       Book.objects.filter(Q(extra__a=bob) |
-                                           Q(author=bob) |
-                                           Q(extra__b=bob))]),
-            "1,2,3,4")
+            u','.join([six.text_type(b) for b in
+                Book.objects.filter(Q(extra__a=bob) |
+                                    Q(author=bob) |
+                                    Q(extra__b=bob))]),
+            u'1,2,3,4')
 
         # Susan & Karl related books
         self.assertEqual(
-            u",".join([str(b) for b in Book.objects.filter(
-                        Q(extra__a__all=[karl, susan]) |
-                        Q(author__all=[karl, susan]) |
-                        Q(extra__b__all=[karl.to_dbref(), susan.to_dbref()]))]),
-            "1")
+            u','.join([six.text_type(b) for b in
+                Book.objects.filter(Q(extra__a__all=[karl, susan]) |
+                                    Q(author__all=[karl, susan]) |
+                                    Q(extra__b__all=[
+                                        karl.to_dbref(), susan.to_dbref()]))]),
+            u'1')
 
         # $Where
         self.assertEqual(
-            u",".join([str(b) for b in
+            ','.join([six.text_type(b) for b in
                        Book.objects.filter(
-                           __raw__={"$where": """
+                           __raw__={'$where': """
                                         function(){
                                             return this.name == '1' ||
                                                    this.name == '2';}"""})]),
-            "1,2")
+            '1,2')
 
     def test_document_equality(self):
         class A(Document):

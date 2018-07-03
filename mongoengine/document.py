@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import pymongo
+import six
 from bson.dbref import DBRef
 
 from . import signals
@@ -235,9 +236,9 @@ class Document(BaseDocument):
 
         except pymongo.errors.OperationFailure, err:
             message = 'Could not save document (%s)'
-            if u'duplicate key' in unicode(err):
+            if u'duplicate key' in six.text_type(err):
                 message = u'Tried to save duplicate unique keys (%s)'
-            raise OperationError(message % unicode(err))
+            raise OperationError(message % six.text_type(err))
         id_field = self._meta['id_field']
         self[id_field] = self._fields[id_field].to_python(object_id)
 

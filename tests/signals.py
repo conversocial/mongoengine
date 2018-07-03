@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 
+import six
 from mongoengine import connect, Document, StringField
 from mongoengine import signals
 from mongoengine.connection import register_db, disconnect
@@ -92,11 +93,12 @@ class DocumentSignalTests(BaseSignalTests):
         connect()
         register_db('mongoenginetest')
 
+        @six.python_2_unicode_compatible
         class Author(Document):
             name = StringField()
 
-            def __unicode__(self):
-                return self.name
+            def __str__(self):
+                return str(self.name)
 
             @classmethod
             def pre_init(cls, sender, document, *args, **kwargs):
@@ -141,11 +143,12 @@ class DocumentSignalTests(BaseSignalTests):
                     signal_output.append('Not loaded')
         self.Author = Author
 
+        @six.python_2_unicode_compatible
         class Another(Document):
             name = StringField()
 
-            def __unicode__(self):
-                return self.name
+            def __str__(self):
+                return str(self.name)
 
             @classmethod
             def pre_init(cls, sender, document, **kwargs):

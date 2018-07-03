@@ -32,7 +32,7 @@ Example usage::
     class Author(Document):
         name = StringField()
 
-        def __unicode__(self):
+        def __str__(self):
             return self.name
 
         @classmethod

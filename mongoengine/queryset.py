@@ -403,7 +403,7 @@ class QuerySet(six.Iterator):
     def _build_index_spec(cls, doc_cls, spec):
         """Build a PyMongo index spec from a MongoEngine index spec.
         """
-        if isinstance(spec, basestring):
+        if isinstance(spec, six.string_types):
             spec = {'fields': [spec]}
         if isinstance(spec, (list, tuple)):
             spec = {'fields': spec}
@@ -646,15 +646,14 @@ class QuerySet(six.Iterator):
                 singular_ops = [None, 'ne', 'gt', 'gte', 'lt', 'lte', 'not']
                 singular_ops += match_operators
                 if op in singular_ops:
-                    if isinstance(field, basestring):
-                        if op in match_operators and isinstance(value,
-                                                                basestring):
-                            from . import StringField
-                            value = StringField.prepare_query_value(op, value)
-                        else:
-                            value = field
-                    else:
+                    if not isinstance(field, six.string_types):
                         value = field.prepare_query_value(op, value)
+                    elif op in match_operators and isinstance(
+                            value, six.string_types):
+                        from . import StringField
+                        value = StringField.prepare_query_value(op, value)
+                    else:
+                        value = field
                 elif op in ('in', 'nin', 'all', 'near'):
                     # 'in', 'nin' and 'all' require a list of values
                     value = [field.prepare_query_value(op, v) for v in value]
@@ -939,13 +938,13 @@ class QuerySet(six.Iterator):
         map_f_scope = {}
         if isinstance(map_f, Code):
             map_f_scope = map_f.scope
-            map_f = unicode(map_f)
+            map_f = six.text_type(map_f)
         map_f = Code(self._sub_js_fields(map_f), map_f_scope)
 
         reduce_f_scope = {}
         if isinstance(reduce_f, Code):
             reduce_f_scope = reduce_f.scope
-            reduce_f = unicode(reduce_f)
+            reduce_f = six.text_type(reduce_f)
         reduce_f_code = self._sub_js_fields(reduce_f)
         reduce_f = Code(reduce_f_code, reduce_f_scope)
 
@@ -955,7 +954,7 @@ class QuerySet(six.Iterator):
             finalize_f_scope = {}
             if isinstance(finalize_f, Code):
                 finalize_f_scope = finalize_f.scope
-                finalize_f = unicode(finalize_f)
+                finalize_f = six.text_type(finalize_f)
             finalize_f_code = self._sub_js_fields(finalize_f)
             finalize_f = Code(finalize_f_code, finalize_f_scope)
             mr_args['finalize'] = finalize_f
@@ -1357,10 +1356,10 @@ class QuerySet(six.Iterator):
             if ret is not None and 'n' in ret:
                 return ret['n']
         except pymongo.errors.OperationFailure, err:
-            if unicode(err) == u'multi not coded yet':
+            if six.text_type(err) == u'multi not coded yet':
                 message = u'update() method requires MongoDB 1.1.3+'
                 raise OperationError(message)
-            raise OperationError(u'Update failed (%s)' % unicode(err))
+            raise OperationError(u'Update failed (%s)' % six.text_type(err))
 
     def update_one(self, w=1, upsert=False, write_options=None, **update):
         """Perform an atomic update on first field matched by the query.
@@ -1389,7 +1388,7 @@ class QuerySet(six.Iterator):
             if ret is not None and 'n' in ret:
                 return ret['n']
         except pymongo.errors.OperationFailure, e:
-            raise OperationError(u'Update failed [%s]' % unicode(e))
+            raise OperationError(u'Update failed [%s]' % six.text_type(e))
 
     def __iter__(self):
         self.rewind()
@@ -1451,8 +1450,8 @@ class QuerySet(six.Iterator):
             # Substitute the correct name for the field into the javascript
             return ".".join([f.db_field for f in fields])
 
-        code = re.sub(u'\[\s*~([A-z_][A-z_0-9.]+?)\s*\]', field_sub, code)
-        code = re.sub(u'\{\{\s*~([A-z_][A-z_0-9.]+?)\s*\}\}',
+        code = re.sub(r'\[\s*~([A-z_][A-z_0-9.]+?)\s*\]', field_sub, code)
+        code = re.sub(r'\{\{\s*~([A-z_][A-z_0-9.]+?)\s*\}\}',
                       field_path_sub, code)
         return code
 

@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from .. import *
 
+import six
 from django.utils.hashcompat import md5_constructor, sha_constructor
 from django.utils.encoding import smart_str
 from django.contrib.auth.models import AnonymousUser
@@ -20,6 +21,7 @@ def get_hexdigest(algorithm, salt, raw_password):
     raise ValueError('Got unknown password algorithm type in password')
 
 
+@six.python_2_unicode_compatible
 class User(Document):
     """A User document that aims to mirror most of the API specified by Django
     at http://docs.djangoproject.com/en/dev/topics/auth/#users
@@ -57,7 +59,7 @@ class User(Document):
         ]
     }
 
-    def __unicode__(self):
+    def __str__(self):
         return self.username
 
     def get_full_name(self):

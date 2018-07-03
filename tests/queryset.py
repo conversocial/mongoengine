@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 import pymongo
+import six
 from bson import ObjectId
 from datetime import datetime, timedelta
 
@@ -69,7 +70,8 @@ class QuerySetTest(unittest.TestCase):
         self.assertEqual(len(people), 2)
         results = list(people)
         self.assertTrue(isinstance(results[0], self.Person))
-        self.assertTrue(isinstance(results[0].id, (ObjectId, str, unicode)))
+        self.assertTrue(
+            isinstance(results[0].id, six.string_types + (ObjectId,)))
         self.assertEqual(results[0].name, "User A")
         self.assertEqual(results[0].age, 20)
         self.assertEqual(results[1].name, "User B")
@@ -2211,12 +2213,13 @@ class QuerySetTest(unittest.TestCase):
     def test_geospatial_operators(self):
         """Ensure that geospatial queries are working.
         """
+        @six.python_2_unicode_compatible
         class Event(Document):
             title = StringField()
             date = DateTimeField()
             location = GeoPointField()
 
-            def __unicode__(self):
+            def __str__(self):
                 return self.title
 
         Event.drop_collection()
@@ -2961,10 +2964,10 @@ class QuerySetTest(unittest.TestCase):
             "A0",
             "%s" % self.Person.objects.scalar('name').order_by('name')[0])
         self.assertEqual(
-            "[u'A1', u'A2']",
+            six.text_type([u'A1', u'A2']),
             "%s" % self.Person.objects.order_by('age').scalar('name')[1:3])
         self.assertEqual(
-            "[u'A51', u'A52']",
+            six.text_type([u'A51', u'A52']),
             "%s" % self.Person.objects.order_by('age').scalar('name')[51:53])
 
         # with_id and in_bulk
@@ -2975,7 +2978,7 @@ class QuerySetTest(unittest.TestCase):
 
         pks = self.Person.objects.order_by('age').scalar('pk')[1:3]
         self.assertEqual(
-            "[u'A1', u'A2']",
+            six.text_type([u'A1', u'A2']),
             "%s" % sorted(
                 self.Person.objects.scalar('name').in_bulk(list(pks)).values()))
 

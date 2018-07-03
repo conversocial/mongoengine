@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import pymongo
+import six
 from pymongo import MongoClient, uri_parser
 from pymongo.read_preferences import ReadPreference
 
@@ -122,9 +123,9 @@ def get_connection(alias=DEFAULT_CONNECTION_NAME, reconnect=False):
 def register_db(
         db_name, db_alias=DEFAULT_DB_ALIAS,
         connection_alias=DEFAULT_CONNECTION_NAME):
-    assert isinstance(db_name, basestring)
-    assert isinstance(db_alias, basestring)
-    assert isinstance(connection_alias, basestring)
+    assert isinstance(db_name, six.string_types)
+    assert isinstance(db_alias, six.string_types)
+    assert isinstance(connection_alias, six.string_types)
 
     global _db_settings
     _db_settings[db_alias] = {

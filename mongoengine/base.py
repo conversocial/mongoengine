@@ -75,7 +75,7 @@ class ValidationError(AssertionError):
             elif isinstance(source, ValidationError) and source.errors:
                 return build_dict(source.errors)
             else:
-                return unicode(source)
+                return six.text_type(source)
             return errors_dict
         if not self.errors:
             return {}
@@ -223,11 +223,10 @@ class BaseField(object):
                 option_keys = [
                     option_key for option_key, option_value in self.choices]
                 if value not in option_keys:
-                    self.error('Value must be one of %s' % unicode(option_keys))
+                    self.error('Value must be one of %s' % str(option_keys))
             else:
                 if value not in self.choices:
-                    self.error(
-                        'Value must be one of %s' % unicode(self.choices))
+                    self.error('Value must be one of %s' % str(self.choices))
 
         # check validation argument
         if self.validation is not None:
@@ -296,7 +295,7 @@ class ComplexBaseField(BaseField):
     def to_python(self, value):
         """Convert a MongoDB-compatible type to a Python type.
         """
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types + (six.binary_type,)):
             return value
 
         if hasattr(value, 'to_python'):
@@ -327,7 +326,7 @@ class ComplexBaseField(BaseField):
         """
         from .document import Document
 
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types + (six.binary_type,)):
             return value
 
         if hasattr(value, 'to_mongo'):
@@ -425,7 +424,7 @@ class BaseDynamicField(BaseField):
         """Convert a Python type to a MongoDBcompatible type.
         """
 
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types + (six.binary_type,)):
             return value
 
         if hasattr(value, 'to_mongo'):
@@ -454,9 +453,12 @@ class BaseDynamicField(BaseField):
         return member_name
 
     def prepare_query_value(self, op, value):
-        if isinstance(value, basestring):
-            from mongoengine.fields import StringField
+        if isinstance(value, six.string_types):
+            from .fields import StringField
             return StringField().prepare_query_value(op, value)
+        if isinstance(value, six.binary_type):
+            from .fields import BinaryField
+            return BinaryField().prepare_query_value(op, value)
         return self.to_mongo(value)
 
 
@@ -470,10 +472,10 @@ class ObjectIdField(BaseField):
     def to_mongo(self, value):
         if not isinstance(value, ObjectId):
             try:
-                return ObjectId(unicode(value))
+                return ObjectId(str(value))
             except Exception, e:
                 # e.message attribute has been deprecated since Python 2.6
-                self.error(unicode(e))
+                self.error(six.text_type(e))
         return value
 
     def prepare_query_value(self, op, value):
@@ -481,7 +483,7 @@ class ObjectIdField(BaseField):
 
     def validate(self, value):
         try:
-            ObjectId(unicode(value))
+            ObjectId(str(value))
         except:
             self.error('Invalid Object ID')
 
@@ -774,6 +776,7 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
         return new_class
 
 
+@six.python_2_unicode_compatible
 class BaseDocument(object):
     _dynamic = False
     _created = True
@@ -1187,15 +1190,13 @@ class BaseDocument(object):
 
     def __repr__(self):
         try:
-            u = unicode(self).encode('utf-8')
-        except (UnicodeEncodeError, UnicodeDecodeError):
+            u = str(self)
+        except UnicodeError:
             u = '[Bad Unicode data]'
         return '<%s: %s>' % (self.__class__.__name__, u)
 
     def __str__(self):
-        if hasattr(self, '__unicode__'):
-            return unicode(self).encode('utf-8')
-        return '%s object' % self.__class__.__name__
+        return u'%s object' % self.__class__.__name__
 
     def __eq__(self, other):
         if isinstance(other, self.__class__) and hasattr(other, 'id'):

@@ -1324,7 +1324,7 @@ class FieldTest(unittest.TestCase):
             content_type = StringField()
             blob = BinaryField()
 
-        BLOB = '\xe6\x00\xc4\xff\x07'
+        BLOB = b'\xe6\x00\xc4\xff\x07'
         MIME_TYPE = 'application/octet-stream'
 
         Attachment.drop_collection()
@@ -1361,12 +1361,13 @@ class FieldTest(unittest.TestCase):
 
         attachment_required = AttachmentRequired()
         self.assertRaises(ValidationError, attachment_required.validate)
-        attachment_required.blob = '\xe6\x00\xc4\xff\x07'
+        attachment_required.blob = b'\xe6\x00\xc4\xff\x07'
         attachment_required.validate()
 
-        attachment_size_limit = AttachmentSizeLimit(blob='\xe6\x00\xc4\xff\x07')
+        attachment_size_limit = AttachmentSizeLimit(
+            blob=b'\xe6\x00\xc4\xff\x07')
         self.assertRaises(ValidationError, attachment_size_limit.validate)
-        attachment_size_limit.blob = '\xe6\x00\xc4\xff'
+        attachment_size_limit.blob = b'\xe6\x00\xc4\xff'
         attachment_size_limit.validate()
 
         Attachment.drop_collection()
@@ -1492,8 +1493,8 @@ class FieldTest(unittest.TestCase):
         class SetFile(Document):
             file = FileField()
 
-        text = 'Hello, World!'
-        more_text = 'Foo Bar'
+        text = b'Hello, World!'
+        more_text = b'Foo Bar'
         content_type = 'text/plain'
 
         PutFile.drop_collection()
@@ -1569,7 +1570,7 @@ class FieldTest(unittest.TestCase):
         # First instance
         testfile = TestFile()
         testfile.name = "Hello, World!"
-        testfile.file.put('Hello, World!')
+        testfile.file.put(b'Hello, World!')
         testfile.save()
 
         # Second instance
@@ -1589,7 +1590,7 @@ class FieldTest(unittest.TestCase):
 
         testfile = TestFile()
         self.assertFalse(bool(testfile.file))
-        testfile.file = 'Hello, World!'
+        testfile.file = b'Hello, World!'
         testfile.file.content_type = 'text/plain'
         testfile.save()
         self.assertTrue(bool(testfile.file))
@@ -1675,7 +1676,7 @@ class FieldTest(unittest.TestCase):
         # First instance
         testfile = TestFile()
         testfile.name = "Hello, World!"
-        testfile.file.put('Hello, World!',
+        testfile.file.put(b'Hello, World!',
                           name="hello.txt")
         testfile.save()
 
@@ -1683,8 +1684,8 @@ class FieldTest(unittest.TestCase):
         self.assertEquals(data.get('name'), 'hello.txt')
 
         testfile = TestFile.objects.first()
-        self.assertEquals(testfile.file.read(),
-                          'Hello, World!')
+        self.assertEqual(testfile.file.read(),
+                          b'Hello, World!')
 
     def test_ensure_unique_default_instances(self):
         """Ensure that every field has it's own unique default instance."""
