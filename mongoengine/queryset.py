@@ -11,6 +11,7 @@ import six
 from bson.code import Code
 
 from . import signals
+from functools import reduce
 
 __all__ = ['queryset_manager', 'Q', 'InvalidQueryError',
            'DO_NOTHING', 'NULLIFY', 'CASCADE', 'DENY']
