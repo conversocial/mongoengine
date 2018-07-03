@@ -1,3 +1,5 @@
+from __future__ import absolute_import, print_function
+
 import pickle
 import pymongo
 import bson
@@ -666,7 +668,7 @@ class DocumentTest(unittest.TestCase):
         del(_document_registry['Place.NicePlace'])
 
         def query_without_importing_nice_place():
-            print Place.objects.all()
+            print(Place.objects.all())
         self.assertRaises(NotRegistered, query_without_importing_nice_place)
 
     def test_creation(self):
