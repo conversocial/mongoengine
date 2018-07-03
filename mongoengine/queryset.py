@@ -1768,7 +1768,7 @@ class QuerySetManager(object):
         queryset_class = owner._meta['queryset_class'] or QuerySet
         queryset = queryset_class(owner, owner._get_collection())
         if self.get_queryset:
-            if self.get_queryset.func_code.co_argcount == 1:
+            if six.get_function_code(self.get_queryset).co_argcount == 1:
                 queryset = self.get_queryset(queryset)
             else:
                 queryset = self.get_queryset(owner, queryset)
@@ -1783,7 +1783,7 @@ def queryset_manager(func):
     function should return a :class:`~mongoengine.queryset.QuerySet`, probably
     the same one that was passed in, but modified in some way.
     """
-    if func.func_code.co_argcount == 1:
+    if six.get_function_code(func).co_argcount == 1:
         import warnings
         msg = 'Methods decorated with queryset_manager should take 2 arguments'
         warnings.warn(msg, DeprecationWarning)
