@@ -322,8 +322,8 @@ class FieldTest(unittest.TestCase):
         LogEntry.drop_collection()
 
         # Post UTC - microseconds are rounded (down) nearest millisecond
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 999)
-        d2 = datetime.datetime(1970, 01, 01, 00, 00, 01)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 999)
+        d2 = datetime.datetime(1970, 1, 1, 0, 0, 1)
         log = LogEntry()
         log.date = d1
         log.save()
@@ -332,8 +332,8 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(log.date, d2)
 
         # Post UTC - microseconds are rounded (down) nearest millisecond
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 9999)
-        d2 = datetime.datetime(1970, 01, 01, 00, 00, 01, 9000)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 9999)
+        d2 = datetime.datetime(1970, 1, 1, 0, 0, 1, 9000)
         log.date = d1
         log.save()
         log.reload()
@@ -363,7 +363,7 @@ class FieldTest(unittest.TestCase):
 
         # Post UTC - microseconds are rounded (down) nearest millisecond and
         # dropped - with default datetimefields
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 999)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 999)
         log = LogEntry()
         log.date = d1
         log.save()
@@ -372,7 +372,7 @@ class FieldTest(unittest.TestCase):
 
         # Post UTC - microseconds are rounded (down) nearest millisecond -
         # with default datetimefields
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 9999)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 9999)
         log.date = d1
         log.save()
         log.reload()
@@ -409,7 +409,7 @@ class FieldTest(unittest.TestCase):
 
         LogEntry.drop_collection()
 
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 999)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 999)
         log = LogEntry()
         log.date = d1
         log.save()
@@ -421,7 +421,7 @@ class FieldTest(unittest.TestCase):
 
         # create 60 log entries
         for i in range(1950, 2010):
-            d = datetime.datetime(i, 01, 01, 00, 00, 01, 999)
+            d = datetime.datetime(i, 1, 1, 0, 0, 1, 999)
             LogEntry(date=d).save()
 
         self.assertEqual(LogEntry.objects.count(), 60)
