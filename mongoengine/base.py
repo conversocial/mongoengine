@@ -513,9 +513,9 @@ class DocumentMetaclass(type):
                 attrs.update(_get_mixin_fields(p_base))
             return attrs
 
-        metaclass = attrs.get('__metaclass__')
         super_new = super(DocumentMetaclass, cls).__new__
-        if metaclass and issubclass(metaclass, DocumentMetaclass):
+        if attrs.pop('_base', False):
+            # This is a base document class, not an actual document
             return super_new(cls, name, bases, attrs)
 
         doc_fields = {}
@@ -656,14 +656,13 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
         super_new = super(TopLevelDocumentMetaclass, cls).__new__
         # Classes defined in this package are abstract and should not have
         # their own metadata with DB collection, etc.
-        # __metaclass__ is only set on the class with the __metaclass__
-        # attribute (i.e. it is not set on subclasses). This differentiates
-        # 'real' documents from the 'Document' class
+        # attrs['_base'] is only set to True on the base document classes.
+        # This differentiates 'real' documents from the 'Document' class.
         #
         # Also assume a class is abstract if it has abstract set to True in
         # its meta dictionary. This allows custom Document superclasses.
-        if (attrs.get('__metaclass__') == TopLevelDocumentMetaclass or
-                ('meta' in attrs and attrs['meta'].get('abstract', False))):
+        base = attrs.get('_base', False)
+        if base or ('meta' in attrs and attrs['meta'].get('abstract', False)):
             # Make sure no base class was non-abstract
             non_abstract_bases = [
                 b for b in bases
@@ -672,6 +671,7 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
                 raise ValueError(
                     "Abstract document cannot have non-abstract base")
             return super_new(cls, name, bases, attrs)
+        attrs.pop('_base', None)
 
         collection = ''.join('_%s' % c if c.isupper() else c for c in name) \
                        .strip('_').lower()

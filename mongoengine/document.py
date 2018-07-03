@@ -19,14 +19,13 @@ class InvalidCollectionError(Exception):
     pass
 
 
-class EmbeddedDocument(BaseDocument):
+class EmbeddedDocument(six.with_metaclass(DocumentMetaclass, BaseDocument)):
     """A :class:`~mongoengine.Document` that isn't stored in its own
     collection.  :class:`~mongoengine.EmbeddedDocument`\ s should be used as
     fields on :class:`~mongoengine.Document`\ s through the
     :class:`~mongoengine.EmbeddedDocumentField` field type.
     """
-
-    __metaclass__ = DocumentMetaclass
+    _base = True
 
     def __init__(self, *args, **kwargs):
         super(EmbeddedDocument, self).__init__(*args, **kwargs)
@@ -44,7 +43,7 @@ class EmbeddedDocument(BaseDocument):
             super(EmbeddedDocument, self).__delattr__(*args, **kwargs)
 
 
-class Document(BaseDocument):
+class Document(six.with_metaclass(TopLevelDocumentMetaclass, BaseDocument)):
     """The base class used for defining the structure and properties of
     collections of documents stored in MongoDB. Inherit from this class, and
     add fields as class attributes to define a document's structure.
@@ -77,7 +76,7 @@ class Document(BaseDocument):
     names. Index direction may be specified by prefixing the field names with
     a **+** or **-** sign.
     """
-    __metaclass__ = TopLevelDocumentMetaclass
+    _base = True
 
     @apply
     def pk():
@@ -382,7 +381,7 @@ class Document(BaseDocument):
         QuerySet._reset_already_indexed(cls)
 
 
-class DynamicDocument(Document):
+class DynamicDocument(six.with_metaclass(TopLevelDocumentMetaclass, Document)):
     """A Dynamic Document class allowing flexible, expandable and uncontrolled
     schemas.  As a :class:`~mongoengine.Document` subclass, acts in the same
     way as an ordinary document but has expando style properties.  Any data
@@ -395,7 +394,7 @@ class DynamicDocument(Document):
 
         There is one caveat on Dynamic Documents: fields cannot start with `_`
     """
-    __metaclass__ = TopLevelDocumentMetaclass
+    _base = True
     _dynamic = True
 
     def __delattr__(self, *args, **kwargs):
@@ -408,13 +407,12 @@ class DynamicDocument(Document):
             super(DynamicDocument, self).__delattr__(*args, **kwargs)
 
 
-class DynamicEmbeddedDocument(EmbeddedDocument):
+class DynamicEmbeddedDocument(six.with_metaclass(DocumentMetaclass, EmbeddedDocument)):
     """A Dynamic Embedded Document class allowing flexible, expandable and
     uncontrolled schemas. See :class:`~mongoengine.DynamicDocument` for more
     information about dynamic documents.
     """
-
-    __metaclass__ = DocumentMetaclass
+    _base = True
     _dynamic = True
 
     def __delattr__(self, *args, **kwargs):
