@@ -115,7 +115,7 @@ class DeReference(object):
                     object_map[key] = doc
             else:  # Generic reference: use the refs data to convert to document
                 if doc_type and \
-                        not isinstance(doc_type, (ListField, DictField, MapField,)):  # noqa
+                        not isinstance(doc_type, (ListField, DictField, MapField)):  # noqa
                     references = doc_type._get_db()[col].find(
                         {'_id': {'$in': refs}})
                     for ref in references:

@@ -789,7 +789,7 @@ class BaseDocument(object):
         self._data = {}
 
         # Assign default values to instance
-        for attr_name, field in self._fields.items():
+        for attr_name in self._fields.keys():
             if attr_name not in values:
                 value = getattr(self, attr_name, None)
                 setattr(self, attr_name, value)

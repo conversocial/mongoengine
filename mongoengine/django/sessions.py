@@ -19,7 +19,7 @@ class MongoSession(Document):
     session_key = fields.StringField(primary_key=True, max_length=40)
     session_data = fields.StringField()
     expire_date = fields.DateTimeField()
-    
+
     meta = {'collection': 'django_session',
             'db_alias': MONGOENGINE_SESSION_DB_ALIAS,
             'allow_inheritance': False}
