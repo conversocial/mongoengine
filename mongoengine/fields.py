@@ -1123,7 +1123,7 @@ class ImageField(FileField):
         for att_name, att in extra_args.items():
             if att and (isinstance(att, tuple) or isinstance(att, list)):
                 setattr(self, att_name, dict(
-                        map(None, params_size, att)))
+                        six.moves.zip_longest(params_size, att)))
             else:
                 setattr(self, att_name, None)
 
