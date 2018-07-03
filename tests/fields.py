@@ -1605,7 +1605,8 @@ class FieldTest(unittest.TestCase):
         TestImage.drop_collection()
 
         t = TestImage()
-        t.image.put(open(TEST_IMAGE_PATH, 'r'))
+        with open(TEST_IMAGE_PATH, 'rb') as f:
+            t.image.put(f)
         t.save()
 
         t = TestImage.objects.first()
@@ -1626,7 +1627,8 @@ class FieldTest(unittest.TestCase):
         TestImage.drop_collection()
 
         t = TestImage()
-        t.image.put(open(TEST_IMAGE_PATH, 'r'))
+        with open(TEST_IMAGE_PATH, 'rb') as f:
+            t.image.put(f)
         t.save()
 
         t = TestImage.objects.first()
@@ -1647,7 +1649,8 @@ class FieldTest(unittest.TestCase):
         TestImage.drop_collection()
 
         t = TestImage()
-        t.image.put(open(TEST_IMAGE_PATH, 'r'))
+        with open(TEST_IMAGE_PATH, 'rb') as f:
+            t.image.put(f)
         t.save()
 
         t = TestImage.objects.first()
