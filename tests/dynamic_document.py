@@ -1,5 +1,6 @@
 import unittest
 
+import six
 from mongoengine import (
     connect, StringField, IntField,
     DynamicDocument, DynamicEmbeddedDocument)
@@ -480,7 +481,8 @@ class DynamicDocTest(unittest.TestCase):
             doc.embedded_field.list_field[2].list_field,
             [2, {'hello': 'world'}, 1])
 
-        doc.embedded_field.list_field[2].list_field.sort()
+        doc.embedded_field.list_field[2].list_field.sort(
+            key=lambda i: six.text_type(i))
         doc.save()
         doc.reload()
         self.assertEqual(doc.embedded_field.list_field[2].list_field,
