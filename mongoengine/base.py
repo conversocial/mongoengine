@@ -385,7 +385,7 @@ class ComplexBaseField(BaseField):
             for k, v in sequence:
                 try:
                     self.field.validate(v)
-                except (ValidationError, AssertionError), error:
+                except (ValidationError, AssertionError) as error:
                     if hasattr(error, 'errors'):
                         errors[k] = error.errors
                     else:
@@ -473,7 +473,7 @@ class ObjectIdField(BaseField):
         if not isinstance(value, ObjectId):
             try:
                 return ObjectId(str(value))
-            except Exception, e:
+            except Exception as e:
                 # e.message attribute has been deprecated since Python 2.6
                 self.error(six.text_type(e))
         return value
@@ -902,9 +902,9 @@ class BaseDocument(object):
             if value is not None:
                 try:
                     field._validate(value)
-                except ValidationError, error:
+                except ValidationError as error:
                     errors[field.name] = error.errors or error
-                except (ValueError, AttributeError, AssertionError), error:
+                except (ValueError, AttributeError, AssertionError) as error:
                     errors[field.name] = error
             elif field.required:
                 errors[field.name] = ValidationError('Field is required',

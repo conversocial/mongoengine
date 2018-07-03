@@ -117,7 +117,7 @@ class URLField(StringField):
             try:
                 request = urllib2.Request(value)
                 urllib2.urlopen(request)
-            except Exception, e:
+            except Exception as e:
                 self.error('This URL appears to be a broken link: %s' % e)
 
 
@@ -216,7 +216,7 @@ class DecimalField(BaseField):
                 value = six.text_type(value)
             try:
                 value = decimal.Decimal(value)
-            except Exception, exc:
+            except Exception as exc:
                 self.error('Could not convert value to decimal: %s' % exc)
 
         if self.min_value is not None and value < self.min_value:
@@ -1237,5 +1237,5 @@ class UUIDField(BaseField):
                 value = six.text_type(value)
             try:
                 value = uuid.UUID(value)
-            except Exception, exc:
+            except Exception as exc:
                 self.error('Could not convert to UUID: %s' % exc)

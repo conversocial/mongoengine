@@ -547,7 +547,7 @@ class QuerySet(six.Iterator):
             if field_name.isdigit():
                 try:
                     new_field = field.field
-                except AttributeError, err:
+                except AttributeError as err:
                     raise InvalidQueryError(
                         "Can't use index on unsubscriptable field (%s)" % err)
                 fields.append(field_name)
@@ -1057,7 +1057,7 @@ class QuerySet(six.Iterator):
                 self._skip, self._limit = key.start, key.stop
                 if key.start and key.stop:
                     self._limit = key.stop - key.start
-            except IndexError, err:
+            except IndexError as err:
                 # PyMongo raises an error if key.start == key.stop, catch it,
                 # bin it, kill it.
                 start = key.start or 0
@@ -1355,7 +1355,7 @@ class QuerySet(six.Iterator):
                                           **write_options)
             if ret is not None and 'n' in ret:
                 return ret['n']
-        except pymongo.errors.OperationFailure, err:
+        except pymongo.errors.OperationFailure as err:
             if six.text_type(err) == u'multi not coded yet':
                 message = u'update() method requires MongoDB 1.1.3+'
                 raise OperationError(message)
@@ -1387,7 +1387,7 @@ class QuerySet(six.Iterator):
 
             if ret is not None and 'n' in ret:
                 return ret['n']
-        except pymongo.errors.OperationFailure, e:
+        except pymongo.errors.OperationFailure as e:
             raise OperationError(u'Update failed [%s]' % six.text_type(e))
 
     def __iter__(self):

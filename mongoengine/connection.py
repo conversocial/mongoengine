@@ -114,7 +114,7 @@ def get_connection(alias=DEFAULT_CONNECTION_NAME, reconnect=False):
             signals.pre_connect.send(alias, settings=conn_settings)
             _connections[alias] = MongoClient(**conn_settings)
             signals.post_connect.send(alias, settings=conn_settings, connection=_connections[alias])
-        except Exception, e:
+        except Exception as e:
             raise ConnectionError(
                 "Cannot connect to database %s :\n%s" % (alias, e))
     return _connections[alias]

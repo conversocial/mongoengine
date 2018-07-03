@@ -234,7 +234,7 @@ class Document(BaseDocument):
                 kwargs['_refs'] = _refs
                 self.cascade_save(**kwargs)
 
-        except pymongo.errors.OperationFailure, err:
+        except pymongo.errors.OperationFailure as err:
             message = 'Could not save document (%s)'
             if u'duplicate key' in six.text_type(err):
                 message = u'Tried to save duplicate unique keys (%s)'
@@ -308,7 +308,7 @@ class Document(BaseDocument):
         try:
             self._qs.filter(**self._object_key).delete(
                 w=w, _from_doc_delete=True)
-        except pymongo.errors.OperationFailure, err:
+        except pymongo.errors.OperationFailure as err:
             message = u'Could not delete document (%s)' % err.message
             raise OperationError(message)
 
