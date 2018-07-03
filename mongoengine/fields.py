@@ -931,8 +931,8 @@ class FileField(BaseField):
 
     def __set__(self, instance, value):
         key = self.name
-        if isinstance(value, file) or isinstance(
-                value, six.string_types + (six.binary_type,)):
+        is_file = hasattr(value, 'read') and not isinstance(value, GridFSProxy)
+        if is_file or isinstance(value, six.string_types + (six.binary_type,)):
             # using "FileField() = file/string" notation
             grid_file = instance._data.get(self.name)
             # If a file already exists, delete it
