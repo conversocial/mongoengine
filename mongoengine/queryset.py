@@ -319,8 +319,10 @@ class QueryFieldList(object):
         self.fields = set([])
         self.value = self.ONLY
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.fields)
+
+    __nonzero__ = __bool__
 
 
 class QuerySet(six.Iterator):
