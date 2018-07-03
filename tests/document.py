@@ -47,7 +47,7 @@ class DocumentTest(unittest.TestCase):
         """Add FutureWarning for future allow_inhertiance default change.
         """
 
-        with warnings.catch_warnings(True) as errors:
+        with warnings.catch_warnings(record=True) as errors:
 
             class SimpleBase(Document):
                 a = IntField()
@@ -59,7 +59,7 @@ class DocumentTest(unittest.TestCase):
             self.assertEqual(len(errors), 1)
             warning = errors[0]
             self.assertEqual(FutureWarning, warning.category)
-            self.assertTrue("InheritedClass" in warning.message.message)
+            self.assertTrue('InheritedClass' in str(warning.message))
 
     def test_drop_collection(self):
         """Ensure that the collection may be dropped from the database.
