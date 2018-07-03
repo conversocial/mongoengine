@@ -256,12 +256,12 @@ class QuerySetTest(unittest.TestCase):
                                    write_options=write_options)
 
         author = self.Person.objects.first()
-        self.assertEquals(author.name, 'Ross')
+        self.assertEqual(author.name, 'Ross')
 
         self.Person.objects.update_one(set__name='Test User',
                                        write_options=write_options)
         author = self.Person.objects.first()
-        self.assertEquals(author.name, 'Test User')
+        self.assertEqual(author.name, 'Test User')
 
     def test_update_update_has_a_value(self):
         """Test to ensure that update is passed a value to update to"""
@@ -350,8 +350,8 @@ class QuerySetTest(unittest.TestCase):
         BlogPost.objects(comments__by="jane").update(inc__comments__S__votes=1)
 
         post = BlogPost.objects.first()
-        self.assertEquals(post.comments[1].by, 'jane')
-        self.assertEquals(post.comments[1].votes, 8)
+        self.assertEqual(post.comments[1].by, 'jane')
+        self.assertEqual(post.comments[1].votes, 8)
 
         # Currently the $ operator only applies to the first matched item in
         # the query
@@ -364,7 +364,7 @@ class QuerySetTest(unittest.TestCase):
         Simple.objects(x=2).update(inc__x__S=1)
 
         simple = Simple.objects.first()
-        self.assertEquals(simple.x, [1, 3, 3, 2])
+        self.assertEqual(simple.x, [1, 3, 3, 2])
         Simple.drop_collection()
 
         # You can set multiples
@@ -376,10 +376,10 @@ class QuerySetTest(unittest.TestCase):
         Simple.objects(x=3).update(set__x__S=0)
 
         s = Simple.objects()
-        self.assertEquals(s[0].x, [1, 2, 0, 4])
-        self.assertEquals(s[1].x, [2, 0, 4, 5])
-        self.assertEquals(s[2].x, [0, 4, 5, 6])
-        self.assertEquals(s[3].x, [4, 5, 6, 7])
+        self.assertEqual(s[0].x, [1, 2, 0, 4])
+        self.assertEqual(s[1].x, [2, 0, 4, 5])
+        self.assertEqual(s[2].x, [0, 4, 5, 6])
+        self.assertEqual(s[3].x, [4, 5, 6, 7])
 
         # Using "$unset" with an expression like this "array.$" will result in
         # the array item becoming None, not being removed.
@@ -387,14 +387,14 @@ class QuerySetTest(unittest.TestCase):
         Simple(x=[1, 2, 3, 4, 3, 2, 3, 4]).save()
         Simple.objects(x=3).update(unset__x__S=1)
         simple = Simple.objects.first()
-        self.assertEquals(simple.x, [1, 2, None, 4, 3, 2, 3, 4])
+        self.assertEqual(simple.x, [1, 2, None, 4, 3, 2, 3, 4])
 
         # Nested updates arent supported yet..
         def update_nested():
             Simple.drop_collection()
             Simple(x=[{'test': [1, 2, 3, 4]}]).save()
             Simple.objects(x__test=2).update(set__x__S__test__S=3)
-            self.assertEquals(simple.x, [1, 2, 3, 4])
+            self.assertEqual(simple.x, [1, 2, 3, 4])
 
         self.assertRaises(OperationError, update_nested)
         Simple.drop_collection()
@@ -425,8 +425,8 @@ class QuerySetTest(unittest.TestCase):
                 .update(set__comments__S__votes=Vote(score=4))
 
         post = BlogPost.objects.first()
-        self.assertEquals(post.comments[0].by, 'joe')
-        self.assertEquals(post.comments[0].votes.score, 4)
+        self.assertEqual(post.comments[0].by, 'joe')
+        self.assertEqual(post.comments[0].votes.score, 4)
 
     def test_mapfield_update(self):
         """Ensure that the MapField can be updated."""
@@ -580,7 +580,7 @@ class QuerySetTest(unittest.TestCase):
         Blog.drop_collection()
         blog1 = Blog(title="code", posts=[post1, post2])
         obj_id = Blog.objects.insert(blog1, load_bulk=False)
-        self.assertEquals(obj_id.__class__.__name__, 'ObjectId')
+        self.assertEqual(obj_id.__class__.__name__, 'ObjectId')
 
     def test_repeated_iteration(self):
         """Ensure that QuerySet rewinds itself one iteration finishes.
@@ -607,10 +607,10 @@ class QuerySetTest(unittest.TestCase):
         self.Person(name='Person 2').save()
 
         queryset = self.Person.objects
-        self.assertEquals('[<Person: Person object>, <Person: Person object>]',
+        self.assertEqual('[<Person: Person object>, <Person: Person object>]',
                           repr(queryset))
         for person in queryset:
-            self.assertEquals('.. queryset mid-iteration ..', repr(queryset))
+            self.assertEqual('.. queryset mid-iteration ..', repr(queryset))
 
     def test_regex_query_shortcuts(self):
         """Ensure that contains, startswith, endswith, etc work.
@@ -985,27 +985,27 @@ class QuerySetTest(unittest.TestCase):
 
         # first three
         numbers = Numbers.objects.fields(slice__n=3).get()
-        self.assertEquals(numbers.n, [0, 1, 2])
+        self.assertEqual(numbers.n, [0, 1, 2])
 
         # last three
         numbers = Numbers.objects.fields(slice__n=-3).get()
-        self.assertEquals(numbers.n, [-3, -2, -1])
+        self.assertEqual(numbers.n, [-3, -2, -1])
 
         # skip 2, limit 3
         numbers = Numbers.objects.fields(slice__n=[2, 3]).get()
-        self.assertEquals(numbers.n, [2, 3, 4])
+        self.assertEqual(numbers.n, [2, 3, 4])
 
         # skip to fifth from last, limit 4
         numbers = Numbers.objects.fields(slice__n=[-5, 4]).get()
-        self.assertEquals(numbers.n, [-5, -4, -3, -2])
+        self.assertEqual(numbers.n, [-5, -4, -3, -2])
 
         # skip to fifth from last, limit 10
         numbers = Numbers.objects.fields(slice__n=[-5, 10]).get()
-        self.assertEquals(numbers.n, [-5, -4, -3, -2, -1])
+        self.assertEqual(numbers.n, [-5, -4, -3, -2, -1])
 
         # skip to fifth from last, limit 10 dict method
         numbers = Numbers.objects.fields(n={"$slice": [-5, 10]}).get()
-        self.assertEquals(numbers.n, [-5, -4, -3, -2, -1])
+        self.assertEqual(numbers.n, [-5, -4, -3, -2, -1])
 
     def test_slicing_nested_fields(self):
         """Ensure that query slicing an embedded array works.
@@ -1026,27 +1026,27 @@ class QuerySetTest(unittest.TestCase):
 
         # first three
         numbers = Numbers.objects.fields(slice__embedded__n=3).get()
-        self.assertEquals(numbers.embedded.n, [0, 1, 2])
+        self.assertEqual(numbers.embedded.n, [0, 1, 2])
 
         # last three
         numbers = Numbers.objects.fields(slice__embedded__n=-3).get()
-        self.assertEquals(numbers.embedded.n, [-3, -2, -1])
+        self.assertEqual(numbers.embedded.n, [-3, -2, -1])
 
         # skip 2, limit 3
         numbers = Numbers.objects.fields(slice__embedded__n=[2, 3]).get()
-        self.assertEquals(numbers.embedded.n, [2, 3, 4])
+        self.assertEqual(numbers.embedded.n, [2, 3, 4])
 
         # skip to fifth from last, limit 4
         numbers = Numbers.objects.fields(slice__embedded__n=[-5, 4]).get()
-        self.assertEquals(numbers.embedded.n, [-5, -4, -3, -2])
+        self.assertEqual(numbers.embedded.n, [-5, -4, -3, -2])
 
         # skip to fifth from last, limit 10
         numbers = Numbers.objects.fields(slice__embedded__n=[-5, 10]).get()
-        self.assertEquals(numbers.embedded.n, [-5, -4, -3, -2, -1])
+        self.assertEqual(numbers.embedded.n, [-5, -4, -3, -2, -1])
 
         # skip to fifth from last, limit 10 dict method
         numbers = Numbers.objects.fields(embedded__n={"$slice": [-5, 10]}).get()
-        self.assertEquals(numbers.embedded.n, [-5, -4, -3, -2, -1])
+        self.assertEqual(numbers.embedded.n, [-5, -4, -3, -2, -1])
 
     def test_find_embedded(self):
         """Ensure that an embedded document is properly returned from a query.
@@ -1290,7 +1290,7 @@ class QuerySetTest(unittest.TestCase):
         # Test template style
         code = "{{~comments.content}}"
         sub_code = BlogPost.objects._sub_js_fields(code)
-        self.assertEquals("cmnts.body", sub_code)
+        self.assertEqual("cmnts.body", sub_code)
 
         BlogPost.drop_collection()
 
@@ -1515,7 +1515,7 @@ class QuerySetTest(unittest.TestCase):
 
         BlogPost.objects(slug="test-2").update_one(set__tags__0__name="python")
         post.reload()
-        self.assertEquals(post.tags[0].name, 'python')
+        self.assertEqual(post.tags[0].name, 'python')
 
         BlogPost.objects(slug="test-2").update_one(pop__tags=-1)
         post.reload()
@@ -1914,15 +1914,15 @@ class QuerySetTest(unittest.TestCase):
         Person(name="Wilson Jr").save()
 
         freq = Person.objects.item_frequencies('city')
-        self.assertEquals(freq, {'CRB': 1.0, None: 1.0})
+        self.assertEqual(freq, {'CRB': 1.0, None: 1.0})
         freq = Person.objects.item_frequencies('city', normalize=True)
-        self.assertEquals(freq, {'CRB': 0.5, None: 0.5})
+        self.assertEqual(freq, {'CRB': 0.5, None: 0.5})
 
         freq = Person.objects.item_frequencies('city', map_reduce=True)
-        self.assertEquals(freq, {'CRB': 1.0, None: 1.0})
+        self.assertEqual(freq, {'CRB': 1.0, None: 1.0})
         freq = Person.objects \
                      .item_frequencies('city', normalize=True, map_reduce=True)
-        self.assertEquals(freq, {'CRB': 0.5, None: 0.5})
+        self.assertEqual(freq, {'CRB': 0.5, None: 0.5})
 
     def test_item_frequencies_with_null_embedded(self):
         class Data(EmbeddedDocument):
@@ -1947,10 +1947,10 @@ class QuerySetTest(unittest.TestCase):
         p.save()
 
         ot = Person.objects.item_frequencies('extra.tag', map_reduce=False)
-        self.assertEquals(ot, {None: 1.0, u'friend': 1.0})
+        self.assertEqual(ot, {None: 1.0, 'friend': 1.0})
 
         ot = Person.objects.item_frequencies('extra.tag', map_reduce=True)
-        self.assertEquals(ot, {None: 1.0, u'friend': 1.0})
+        self.assertEqual(ot, {None: 1.0, 'friend': 1.0})
 
     def test_average(self):
         """Ensure that field can be averaged correctly.
@@ -2010,7 +2010,7 @@ class QuerySetTest(unittest.TestCase):
         foo = Foo(bar=bar)
         foo.save()
 
-        self.assertEquals(Foo.objects.distinct("bar"), [bar])
+        self.assertEqual(Foo.objects.distinct("bar"), [bar])
 
     def test_custom_manager(self):
         """Ensure that custom QuerySetManager instances work as expected.
@@ -2425,8 +2425,8 @@ class QuerySetTest(unittest.TestCase):
 
         Post().save()
         Post(is_published=True).save()
-        self.assertEquals(Post.objects.count(), 2)
-        self.assertEquals(Post.published.count(), 1)
+        self.assertEqual(Post.objects.count(), 2)
+        self.assertEqual(Post.published.count(), 1)
 
         Post.drop_collection()
 
@@ -2632,10 +2632,10 @@ class QuerySetTest(unittest.TestCase):
         Number(n=3).save()
 
         numbers = [n.n for n in Number.objects.order_by('-n')]
-        self.assertEquals([3, 2, 1], numbers)
+        self.assertEqual([3, 2, 1], numbers)
 
         numbers = [n.n for n in Number.objects.order_by('+n')]
-        self.assertEquals([1, 2, 3], numbers)
+        self.assertEqual([1, 2, 3], numbers)
         Number.drop_collection()
 
     def test_where(self):

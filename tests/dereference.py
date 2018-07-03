@@ -108,10 +108,10 @@ class FieldTest(unittest.TestCase):
             peter = Employee.objects.with_id(peter.id).select_related()
             self.assertEqual(q, 2)
 
-            self.assertEquals(peter.boss, bill)
+            self.assertEqual(peter.boss, bill)
             self.assertEqual(q, 2)
 
-            self.assertEquals(peter.friends, friends)
+            self.assertEqual(peter.friends, friends)
             self.assertEqual(q, 2)
 
         # Queryset select_related
@@ -122,10 +122,10 @@ class FieldTest(unittest.TestCase):
             self.assertEqual(q, 2)
 
             for employee in employees:
-                self.assertEquals(employee.boss, bill)
+                self.assertEqual(employee.boss, bill)
                 self.assertEqual(q, 2)
 
-                self.assertEquals(employee.friends, friends)
+                self.assertEqual(employee.friends, friends)
                 self.assertEqual(q, 2)
 
     def test_circular_reference(self):
@@ -159,7 +159,7 @@ class FieldTest(unittest.TestCase):
         daughter.relations.append(self_rel)
         daughter.save()
 
-        self.assertEquals(
+        self.assertEqual(
             "[<Person: Mother>, <Person: Daughter>]",
             "%s" % Person.objects())
 
@@ -187,7 +187,7 @@ class FieldTest(unittest.TestCase):
         daughter.relations.append(daughter)
         daughter.save()
 
-        self.assertEquals(
+        self.assertEqual(
             "[<Person: Mother>, <Person: Daughter>]",
             "%s" % Person.objects())
 
@@ -231,7 +231,7 @@ class FieldTest(unittest.TestCase):
         anna.other.name = "Anna's friends"
         anna.save()
 
-        self.assertEquals(
+        self.assertEqual(
             "[<Person: Paul>, <Person: Maria>, <Person: Julia>, <Person: Anna>]",  # noqa
             "%s" % Person.objects())
 
@@ -637,8 +637,8 @@ class FieldTest(unittest.TestCase):
         root.save()
 
         root = root.reload()
-        self.assertEquals([c['_ref'].id for c in root.children], [company.id])
-        self.assertEquals([p.id for p in company.parents], [root.id])
+        self.assertEqual([c['_ref'].id for c in root.children], [company.id])
+        self.assertEqual([p.id for p in company.parents], [root.id])
 
     def test_dict_in_dbref_instance(self):
 
@@ -664,8 +664,8 @@ class FieldTest(unittest.TestCase):
         room_101.save()
 
         room = Room.objects.first().select_related()
-        self.assertEquals(room.staffs_with_position[0]['staff'], sarah)
-        self.assertEquals(room.staffs_with_position[1]['staff'], bob)
+        self.assertEqual(room.staffs_with_position[0]['staff'], sarah)
+        self.assertEqual(room.staffs_with_position[1]['staff'], bob)
 
 
 if __name__ == '__main__':

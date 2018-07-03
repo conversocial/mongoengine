@@ -287,10 +287,10 @@ class DocumentSignalTests(BaseSignalTests):
 
         # The output of this signal is not entirely deterministic. The reloaded
         # object will have an object ID. Hence, we only check part of the output
-        self.assertEquals(
+        self.assertEqual(
             signal_output[3],
             "pre_bulk_insert signal, [<Author: Bill Shakespeare>]")
-        self.assertEquals(
+        self.assertEqual(
             signal_output[-2:],
             ["post_bulk_insert signal, [<Author: Bill Shakespeare>]",
              "Is loaded"])
