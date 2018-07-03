@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import os
 import itertools
-import urlparse
+from six.moves import urllib
 
 from .. import *
 from django.conf import settings
@@ -72,7 +72,7 @@ class GridFSStorage(Storage):
         """
         if self.base_url is None:
             raise ValueError("This file is not accessible via a URL.")
-        return urlparse.urljoin(self.base_url, name).replace('\\', '/')
+        return urllib.parse.urljoin(self.base_url, name).replace('\\', '/')
 
     def _get_doc_with_name(self, name):
         """Find the documents in the store with the given name

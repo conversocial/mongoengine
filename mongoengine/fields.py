@@ -113,10 +113,9 @@ class URLField(StringField):
             self.error('Invalid URL: %s' % value)
 
         if self.verify_exists:
-            import urllib2
             try:
-                request = urllib2.Request(value)
-                urllib2.urlopen(request)
+                request = six.moves.urllib.request.Request(value)
+                six.moves.urllib.request.urlopen(request)
             except Exception as e:
                 self.error('This URL appears to be a broken link: %s' % e)
 
