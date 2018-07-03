@@ -354,7 +354,7 @@ class ComplexDateTimeField(StringField):
         datetime.datetime(2011, 6, 8, 20, 26, 24, 192284)
         """
         data = data.split(',')
-        data = map(int, data)
+        data = list(map(int, data))
         values = {}
         for i in range(7):
             values[self.names[i]] = data[i]
@@ -518,9 +518,9 @@ class SortedListField(ListField):
     _order_reverse = False
 
     def __init__(self, field, **kwargs):
-        if 'ordering' in kwargs.keys():
+        if 'ordering' in kwargs:
             self._ordering = kwargs.pop('ordering')
-        if 'reverse' in kwargs.keys():
+        if 'reverse' in kwargs:
             self._order_reverse = kwargs.pop('reverse')
         super(SortedListField, self).__init__(field, **kwargs)
 

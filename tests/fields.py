@@ -389,7 +389,7 @@ class FieldTest(unittest.TestCase):
         # Pre UTC microseconds above 1000 is wonky - with default datetimefields
         # log.date has an invalid microsecond value so I can't construct
         # a date to compare.
-        for i in xrange(1001, 3113, 33):
+        for i in range(1001, 3113, 33):
             d1 = datetime.datetime(1969, 12, 31, 23, 59, 59, i)
             log.date = d1
             log.save()
@@ -420,7 +420,7 @@ class FieldTest(unittest.TestCase):
         LogEntry.drop_collection()
 
         # create 60 log entries
-        for i in xrange(1950, 2010):
+        for i in range(1950, 2010):
             d = datetime.datetime(i, 01, 01, 00, 00, 01, 999)
             LogEntry(date=d).save()
 
@@ -1707,7 +1707,7 @@ class FieldTest(unittest.TestCase):
         self.db['mongoengine.counters'].drop()
         Person.drop_collection()
 
-        for x in xrange(10):
+        for x in range(10):
             p = Person(name="Person %s" % x)
             p.save()
 
@@ -1715,7 +1715,7 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(c['next'], 10)
 
         ids = [i.id for i in Person.objects]
-        self.assertEqual(ids, range(1, 11))
+        self.assertEqual(ids, list(range(1, 11)))
 
         c = self.db['mongoengine.counters'].find_one({'_id': 'person.id'})
         self.assertEqual(c['next'], 10)
@@ -1729,7 +1729,7 @@ class FieldTest(unittest.TestCase):
         self.db['mongoengine.counters'].drop()
         Person.drop_collection()
 
-        for x in xrange(10):
+        for x in range(10):
             p = Person(name="Person %s" % x)
             p.save()
 
@@ -1737,10 +1737,10 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(c['next'], 10)
 
         ids = [i.id for i in Person.objects]
-        self.assertEqual(ids, range(1, 11))
+        self.assertEqual(ids, list(range(1, 11)))
 
         counters = [i.counter for i in Person.objects]
-        self.assertEqual(counters, range(1, 11))
+        self.assertEqual(counters, list(range(1, 11)))
 
         c = self.db['mongoengine.counters'].find_one({'_id': 'person.id'})
         self.assertEqual(c['next'], 10)
@@ -1783,7 +1783,7 @@ class FieldTest(unittest.TestCase):
         Animal.drop_collection()
         Person.drop_collection()
 
-        for x in xrange(10):
+        for x in range(10):
             a = Animal(name="Animal %s" % x)
             a.save()
             p = Person(name="Person %s" % x)
@@ -1796,10 +1796,10 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(c['next'], 10)
 
         ids = [i.id for i in Person.objects]
-        self.assertEqual(ids, range(1, 11))
+        self.assertEqual(ids, list(range(1, 11)))
 
         id = [i.id for i in Animal.objects]
-        self.assertEqual(id, range(1, 11))
+        self.assertEqual(id, list(range(1, 11)))
 
         c = self.db['mongoengine.counters'].find_one({'_id': 'person.id'})
         self.assertEqual(c['next'], 10)

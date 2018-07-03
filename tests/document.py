@@ -302,7 +302,7 @@ class DocumentTest(unittest.TestCase):
 
         list_stats = []
 
-        for i in xrange(10):
+        for _ in range(10):
             s = Stats()
             s.save()
             list_stats.append(s)
@@ -531,7 +531,7 @@ class DocumentTest(unittest.TestCase):
         Log.drop_collection()
 
         # Ensure that the collection handles up to its maximum
-        for i in range(10):
+        for _ in range(10):
             Log().save()
 
         self.assertEqual(len(Log.objects), 10)
@@ -566,8 +566,8 @@ class DocumentTest(unittest.TestCase):
         BlogPost.drop_collection()
         BlogPost.objects._collection.ensure_index([('tags', pymongo.ASCENDING)])
 
-        for i in xrange(0, 10):
-            tags = [("tag %i" % n) for n in xrange(0, i % 2)]
+        for i in range(0, 10):
+            tags = [("tag %i" % n) for n in range(0, i % 2)]
             BlogPost(tags=tags).save()
 
         self.assertEquals(BlogPost.objects.count(), 10)
@@ -588,8 +588,8 @@ class DocumentTest(unittest.TestCase):
         BlogPost.drop_collection()
         BlogPost.objects._collection.ensure_index([('tags', pymongo.ASCENDING)])
 
-        for i in xrange(0, 10):
-            tags = [("tag %i" % n) for n in xrange(0, i % 2)]
+        for i in range(0, 10):
+            tags = [("tag %i" % n) for n in range(0, i % 2)]
             BlogPost(tags=tags).save()
 
         with self.assertRaises(pymongo.errors.OperationFailure):

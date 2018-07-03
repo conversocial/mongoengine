@@ -97,7 +97,7 @@ class QuerySetTest(unittest.TestCase):
 
         Page.drop_collection()
 
-        for i in xrange(1, 11):
+        for i in range(1, 11):
             Page(name=str(i)).save()
 
         paginator = Paginator(Page.objects.all(), 2)

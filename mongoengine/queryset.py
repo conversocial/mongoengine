@@ -7,6 +7,7 @@ import itertools
 import operator
 
 import pymongo
+import six
 from bson.code import Code
 
 from . import signals
@@ -322,7 +323,7 @@ class QueryFieldList(object):
         return bool(self.fields)
 
 
-class QuerySet(object):
+class QuerySet(six.Iterator):
     """A set of results returned from a query. Wraps a MongoDB cursor,
     providing :class:`~mongoengine.Document` objects as the results.
     """
@@ -710,13 +711,13 @@ class QuerySet(object):
         self.limit(2)
         self.__call__(*q_objs, **query)
         try:
-            result1 = self.next()
+            result1 = next(self)
         except StopIteration:
             raise self._document.DoesNotExist(
                 "%s matching query does not exist."
                 % self._document._class_name)
         try:
-            self.next()
+            next(self)
         except StopIteration:
             return result1
 
@@ -861,7 +862,7 @@ class QuerySet(object):
 
         return doc_map
 
-    def next(self):
+    def __next__(self):
         """Wrap the result in a :class:`~mongoengine.Document` object.
         """
         try:
@@ -869,9 +870,9 @@ class QuerySet(object):
                 raise StopIteration
             if self._scalar:
                 return self._get_scalar(self._document._from_son(
-                        self._cursor.next()))
-            return self._document._from_son(self._cursor.next())
-        except StopIteration, e:
+                        next(self._cursor)))
+            return self._document._from_son(next(self._cursor))
+        except StopIteration as e:
             self.rewind()
             raise e
 

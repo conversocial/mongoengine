@@ -78,7 +78,7 @@ class QuerySetTest(unittest.TestCase):
         # Use a query to filter the people found to just person1
         people = self.Person.objects(age=20)
         self.assertEqual(len(people), 1)
-        person = people.next()
+        person = next(people)
         self.assertEqual(person.name, "User A")
         self.assertEqual(person.age, 20)
 
@@ -121,7 +121,7 @@ class QuerySetTest(unittest.TestCase):
 
         # Test larger slice __repr__
         self.Person.objects.delete()
-        for i in xrange(55):
+        for i in range(55):
             self.Person(name='A%s' % i, age=i).save()
 
         self.assertEqual(len(self.Person.objects), 55)
@@ -525,7 +525,7 @@ class QuerySetTest(unittest.TestCase):
             post2 = Post(comments=[comment2, comment2])
 
             blogs = []
-            for i in xrange(1, 100):
+            for i in range(1, 100):
                 blogs.append(Blog(title="post %s" % i, posts=[post1, post2]))
 
             Blog.objects.insert(blogs, load_bulk=False)
@@ -1599,10 +1599,10 @@ class QuerySetTest(unittest.TestCase):
         results = list(results)
         self.assertEqual(len(results), 4)
 
-        music = filter(lambda r: r.key == "music", results)[0]
+        music = [r for r in results if r.key == "music"][0]
         self.assertEqual(music.value, 2)
 
-        film = filter(lambda r: r.key == "film", results)[0]
+        film = [r for r in results if r.key == "film"][0]
         self.assertEqual(film.value, 3)
 
         BlogPost.drop_collection()
@@ -2520,7 +2520,7 @@ class QuerySetTest(unittest.TestCase):
 
         Number.drop_collection()
 
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = Number(n=i)
             t.save()
 
@@ -2547,7 +2547,7 @@ class QuerySetTest(unittest.TestCase):
 
         Number.drop_collection()
 
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = Number(n=i)
             t.save()
 
@@ -2568,7 +2568,7 @@ class QuerySetTest(unittest.TestCase):
 
         Number.drop_collection()
 
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = Number(n=i)
             t.save()
 
@@ -2908,7 +2908,7 @@ class QuerySetTest(unittest.TestCase):
         # Use a query to filter the people found to just person1
         people = self.Person.objects(age=20).scalar('name')
         self.assertEqual(len(people), 1)
-        person = people.next()
+        person = next(people)
         self.assertEqual(person, "User A")
 
         # Test limit
@@ -2950,7 +2950,7 @@ class QuerySetTest(unittest.TestCase):
 
         # Test larger slice __repr__
         self.Person.objects.delete()
-        for i in xrange(55):
+        for i in range(55):
             self.Person(name='A%s' % i, age=i).save()
 
         self.assertEqual(len(self.Person.objects.scalar('name')), 55)
@@ -3022,7 +3022,7 @@ class QuerySetTest(unittest.TestCase):
 
         Number.drop_collection()
 
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = Number(n=i)
             t.save()
 
@@ -3145,7 +3145,7 @@ class QTest(unittest.TestCase):
         q2 = (Q(x__lt=100) | Q(y=True))
         query = (q1 & q2).to_query(TestDoc)
 
-        self.assertEqual(['$or'], query.keys())
+        self.assertEqual(['$or'], list(query.keys()))
         conditions = [
             {'x': {'$lt': 100, '$gt': 0}},
             {'x': {'$lt': 100, '$exists': False}},
@@ -3167,7 +3167,7 @@ class QTest(unittest.TestCase):
         q2 = (Q(x__lt=100) & (Q(y=False) | Q(y__exists=False)))
         query = (q1 | q2).to_query(TestDoc)
 
-        self.assertEqual(['$or'], query.keys())
+        self.assertEqual(['$or'], list(query.keys()))
         conditions = [
             {'x': {'$gt': 0}, 'y': True},
             {'x': {'$gt': 0}, 'y': {'$exists': False}},
@@ -3184,7 +3184,7 @@ class QTest(unittest.TestCase):
             x = IntField()
 
         TestDoc.drop_collection()
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = TestDoc(x=i)
             t.save()
 

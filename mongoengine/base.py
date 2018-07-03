@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
-from collections import defaultdict
 import warnings
+import six
+from collections import defaultdict
 
 from .queryset import QuerySet, QuerySetManager
 from .queryset import DoesNotExist, MultipleObjectsReturned
@@ -69,7 +70,7 @@ class ValidationError(AssertionError):
             if not source:
                 return errors_dict
             if isinstance(source, dict):
-                for field_name, error in source.iteritems():
+                for field_name, error in six.iteritems(source):
                     errors_dict[field_name] = build_dict(error)
             elif isinstance(source, ValidationError) and source.errors:
                 return build_dict(source.errors)
@@ -88,15 +89,16 @@ class ValidationError(AssertionError):
                 value = ' '.join([generate_key(k) for k in value])
             if isinstance(value, dict):
                 value = ' '.join(
-                        [generate_key(v, k) for k, v in value.iteritems()])
+                    [generate_key(v, k) for k, v in six.iteritems(value)])
 
             results = "%s.%s" % (prefix, value) if prefix else value
             return results
 
         error_dict = defaultdict(list)
-        for k, v in self.to_dict().iteritems():
+        for k, v in six.iteritems(self.to_dict()):
             error_dict[generate_key(v)].append(k)
-        return ' '.join(["%s: %s" % (k, v) for k, v in error_dict.iteritems()])
+        return ' '.join(
+            ["%s: %s" % (k, v) for k, v in six.iteritems(error_dict)])
 
 
 _document_registry = {}
@@ -377,8 +379,8 @@ class ComplexBaseField(BaseField):
         """
         errors = {}
         if self.field:
-            if hasattr(value, 'iteritems'):
-                sequence = value.iteritems()
+            if isinstance(value, dict):
+                sequence = six.iteritems(value)
             else:
                 sequence = enumerate(value)
             for k, v in sequence:
@@ -1019,10 +1021,10 @@ class BaseDocument(object):
             elif isinstance(field, (list, tuple, dict)) and \
                     db_field_name not in _changed_fields:
                 # Determine the iterator to use
-                if not hasattr(field, 'items'):
-                    iterator = enumerate(field)
+                if isinstance(field, dict):
+                    iterator = six.iteritems(field)
                 else:
-                    iterator = field.iteritems()
+                    iterator = enumerate(field)
                 for index, value in iterator:
                     if not hasattr(value, '_get_changed_fields'):
                         continue
@@ -1062,7 +1064,7 @@ class BaseDocument(object):
                 del(set_data['_id'])
 
         # Determine if any changed items were actually unset.
-        for path, value in set_data.items():
+        for path, value in list(set_data.items()):
             if value or isinstance(value, bool):
                 continue
 
