@@ -312,8 +312,8 @@ class ComplexBaseField(BaseField):
                 return value
 
         if self.field:
-            value_dict = dict([(key, self.field.to_python(item))
-                               for key, item in value.items()])
+            value_dict = {key: self.field.to_python(item)
+                          for key, item in value.items()}
         else:
             value_dict = {}
             for k, v in value.items():
@@ -336,13 +336,13 @@ class ComplexBaseField(BaseField):
         if not hasattr(value, 'items'):
             try:
                 is_list = True
-                value = dict([(k, v) for k, v in enumerate(value)])
+                value = {k: v for k, v in enumerate(value)}
             except TypeError:  # Not iterable return the value
                 return value
 
         if self.field:
-            value_dict = dict([(key, self.field.to_mongo(item))
-                               for key, item in value.items()])
+            value_dict = {key: self.field.to_mongo(item)
+                          for key, item in value.items()}
         else:
             value_dict = {}
             for k, v in value.items():
@@ -436,7 +436,7 @@ class BaseDynamicField(BaseField):
         is_list = False
         if not hasattr(value, 'items'):
             is_list = True
-            value = dict([(k, v) for k, v in enumerate(value)])
+            value = {k: v for k, v in enumerate(value)}
 
         data = {}
         for k, v in value.items():
@@ -495,8 +495,8 @@ class DocumentMetaclass(type):
     def __new__(cls, name, bases, attrs):
         def _get_mixin_fields(base):
             attrs = {}
-            attrs.update(dict([(k, v) for k, v in base.__dict__.items()
-                               if issubclass(v.__class__, BaseField)]))
+            attrs.update({k: v for k, v in base.__dict__.items()
+                          if issubclass(v.__class__, BaseField)})
 
             # Handle simple mixin's with meta
             if hasattr(base, 'meta') and \
@@ -586,11 +586,11 @@ class DocumentMetaclass(type):
                 "Multiple db_fields defined for: %s "
                 % ", ".join(duplicate_db_fields))
         attrs['_fields'] = doc_fields
-        attrs['_db_field_map'] = dict([
-            (k, v.db_field) for k, v in doc_fields.items()
-            if k != v.db_field])
-        attrs['_reverse_db_field_map'] = dict([
-            (v, k) for k, v in attrs['_db_field_map'].items()])
+        attrs['_db_field_map'] = {
+            k: v.db_field for k, v in doc_fields.items()
+            if k != v.db_field}
+        attrs['_reverse_db_field_map'] = {
+            v: k for k, v in attrs['_db_field_map'].items()}
 
         from .document import Document, EmbeddedDocument
         from .fields import DictField
@@ -860,7 +860,7 @@ class BaseDocument(object):
         is_list = False
         if not hasattr(value, 'items'):
             is_list = True
-            value = dict([(k, v) for k, v in enumerate(value)])
+            value = {k: v for k, v in enumerate(value)}
 
         if not is_list and '_cls' in value:
             cls = get_document(value['_cls'])
@@ -948,7 +948,7 @@ class BaseDocument(object):
         # get the class name from the document, falling back to the given
         # class if unavailable
         class_name = son.get(u'_cls', cls._class_name)
-        data = dict((str(key), value) for key, value in son.items())
+        data = {str(key): value for key, value in son.items()}
 
         if '_cls' in data:
             del data['_cls']

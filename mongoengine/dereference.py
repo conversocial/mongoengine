@@ -107,9 +107,8 @@ class DeReference(object):
         """
         object_map = {}
         for col, dbrefs in six.iteritems(self.reference_map):
-            keys = object_map.keys()
-            refs = list(set(
-                [dbref for dbref in dbrefs if str(dbref) not in keys]))
+            keys = set(object_map.keys())
+            refs = list({dbref for dbref in dbrefs if str(dbref) not in keys})
             if hasattr(col, 'objects'):  # We have a document class for the refs
                 references = col.objects.in_bulk(refs)
                 for key, doc in six.iteritems(references):

@@ -1655,7 +1655,7 @@ class QuerySet(six.Iterator):
 
         if normalize:
             count = sum(frequencies.values())
-            frequencies = dict([(k, v / count) for k, v in frequencies.items()])
+            frequencies = {k: v / count for k, v in frequencies.items()}
 
         return frequencies
 
