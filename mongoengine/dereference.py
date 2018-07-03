@@ -1,10 +1,12 @@
+from __future__ import absolute_import
+
 from bson import DBRef, SON
 
-from base import (BaseDict, BaseList, TopLevelDocumentMetaclass, get_document)
-from fields import (ReferenceField, ListField, DictField, MapField)
-from connection import get_db
-from queryset import QuerySet
-from document import Document
+from .base import (BaseDict, BaseList, TopLevelDocumentMetaclass, get_document)
+from .fields import (ReferenceField, ListField, DictField, MapField)
+from .connection import get_db
+from .queryset import QuerySet
+from .document import Document
 
 
 class DeReference(object):

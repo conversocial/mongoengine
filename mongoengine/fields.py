@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import datetime
 import time
 import decimal
@@ -5,13 +7,14 @@ import gridfs
 import re
 import uuid
 
+import six
 from bson import Binary, DBRef, SON, ObjectId
 
-from base import (BaseField, ComplexBaseField, ObjectIdField,
+from .base import (BaseField, ComplexBaseField, ObjectIdField,
                   ValidationError, get_document)
-from queryset import DO_NOTHING, QuerySet
-from document import Document, EmbeddedDocument
-from connection import get_db, DEFAULT_CONNECTION_NAME
+from .queryset import DO_NOTHING, QuerySet
+from .document import Document, EmbeddedDocument
+from .connection import get_db, DEFAULT_CONNECTION_NAME
 from operator import itemgetter
 
 
@@ -20,11 +23,6 @@ try:
 except ImportError:
     Image = None
     ImageOps = None
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 
 __all__ = ['StringField', 'IntField', 'FloatField', 'BooleanField',
@@ -1028,7 +1026,7 @@ class ImageGridFsProxy(GridFSProxy):
 
         w, h = img.size
 
-        io = StringIO()
+        io = six.BytesIO()
         img.save(io, img.format)
         io.seek(0)
 
@@ -1050,7 +1048,7 @@ class ImageGridFsProxy(GridFSProxy):
     def _put_thumbnail(self, thumbnail, format, **kwargs):
         w, h = thumbnail.size
 
-        io = StringIO()
+        io = six.BytesIO()
         thumbnail.save(io, format)
         io.seek(0)
 

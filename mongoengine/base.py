@@ -1,11 +1,13 @@
+from __future__ import absolute_import
+
 from collections import defaultdict
 import warnings
 
-from queryset import QuerySet, QuerySetManager
-from queryset import DoesNotExist, MultipleObjectsReturned
-from queryset import DO_NOTHING
+from .queryset import QuerySet, QuerySetManager
+from .queryset import DoesNotExist, MultipleObjectsReturned
+from .queryset import DO_NOTHING
 
-from mongoengine import signals
+from . import signals
 
 import sys
 from bson import ObjectId
@@ -276,7 +278,7 @@ class ComplexBaseField(BaseField):
         instance._mark_as_changed(self.name)
 
     def _value_to_python(self, v):
-        from mongoengine import Document
+        from .document import Document
         if isinstance(v, Document):
             # We need the id from the saved object to create the DBRef
             if v.pk is None:
@@ -321,7 +323,7 @@ class ComplexBaseField(BaseField):
     def to_mongo(self, value):
         """Convert a Python type to a MongoDB-compatible type.
         """
-        from mongoengine import Document
+        from .document import Document
 
         if isinstance(value, basestring):
             return value
@@ -355,7 +357,7 @@ class ComplexBaseField(BaseField):
                     meta = getattr(v, 'meta', getattr(v, '_meta', {}))
                     if meta and not meta.get('allow_inheritance', True) and \
                             not self.field:
-                        from fields import GenericReferenceField
+                        from .fields import GenericReferenceField
                         value_dict[k] = GenericReferenceField().to_mongo(v)
                     else:
                         collection = v._get_collection_name()
@@ -586,7 +588,8 @@ class DocumentMetaclass(type):
         attrs['_reverse_db_field_map'] = dict([
             (v, k) for k, v in attrs['_db_field_map'].items()])
 
-        from mongoengine import Document, EmbeddedDocument, DictField
+        from .document import Document, EmbeddedDocument
+        from .fields import DictField
 
         new_class = super_new(cls, name, bases, attrs)
         for field in new_class._fields.values():
@@ -838,7 +841,7 @@ class BaseDocument(object):
             return
 
         if not self._created and name in self._meta.get('shard_key', tuple()) and self._data[name] != value:
-            from queryset import OperationError
+            from .queryset import OperationError
             raise OperationError(
                 "Shard Keys are immutable. Tried to update %s" % name)
 
@@ -981,7 +984,7 @@ class BaseDocument(object):
     def _get_changed_fields(self, key='', inspected=None):
         """Returns a list of all fields that have explicitly been changed.
         """
-        from mongoengine import EmbeddedDocument, DynamicEmbeddedDocument
+        from .document import EmbeddedDocument, DynamicEmbeddedDocument
         _changed_fields = []
         _changed_fields += getattr(self, '_changed_fields', [])
 

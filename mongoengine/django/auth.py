@@ -1,4 +1,6 @@
-from mongoengine import *
+from __future__ import absolute_import
+
+from .. import *
 
 from django.utils.hashcompat import md5_constructor, sha_constructor
 from django.utils.encoding import smart_str

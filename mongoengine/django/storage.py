@@ -1,8 +1,10 @@
+from __future__ import absolute_import
+
 import os
 import itertools
 import urlparse
 
-from mongoengine import *
+from .. import *
 from django.conf import settings
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured

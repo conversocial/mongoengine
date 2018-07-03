@@ -1,11 +1,13 @@
+from __future__ import absolute_import
+
 import pymongo
 from bson.dbref import DBRef
 
-from mongoengine import signals
-from base import (DocumentMetaclass, TopLevelDocumentMetaclass, BaseDocument,
+from . import signals
+from .base import (DocumentMetaclass, TopLevelDocumentMetaclass, BaseDocument,
                   BaseDict, BaseList)
-from queryset import OperationError, QuerySet
-from connection import get_db, DEFAULT_CONNECTION_NAME
+from .queryset import OperationError, QuerySet
+from .connection import get_db, DEFAULT_CONNECTION_NAME
 
 __all__ = ['Document', 'EmbeddedDocument', 'DynamicDocument',
            'DynamicEmbeddedDocument', 'OperationError',
@@ -245,7 +247,7 @@ class Document(BaseDocument):
 
     def cascade_save(self, *args, **kwargs):
         """Recursively saves any references / generic references on an object"""
-        from fields import ReferenceField, GenericReferenceField
+        from .fields import ReferenceField, GenericReferenceField
         _refs = kwargs.get('_refs', []) or []
         for name, cls in self._fields.items():
             if not isinstance(cls, (ReferenceField, GenericReferenceField)):
@@ -317,7 +319,7 @@ class Document(BaseDocument):
 
         .. versionadded:: 0.5
         """
-        from dereference import DeReference
+        from .dereference import DeReference
         self._data = DeReference()(self._data, max_depth)
         return self
 
@@ -373,7 +375,7 @@ class Document(BaseDocument):
         """Drops the entire collection associated with this
         :class:`~mongoengine.Document` type from the database.
         """
-        from mongoengine.queryset import QuerySet
+        from .queryset import QuerySet
         db = cls._get_db()
         db.drop_collection(cls._get_collection_name())
         QuerySet._reset_already_indexed(cls)

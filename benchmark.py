@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
 
 import timeit
 
@@ -9,7 +10,7 @@ def cprofile_main():
     connection.drop_database('timeit_test')
     connection.disconnect()
 
-    from mongoengine import Document, DictField, connect
+    from .mongoengine import Document, DictField, connect
     connect("timeit_test")
 
     class Noddy(Document):
@@ -106,7 +107,7 @@ connection = Connection()
 connection.drop_database('timeit_test')
 connection.disconnect()
 
-from mongoengine import Document, DictField, connect
+from .mongoengine import Document, DictField, connect
 connect("timeit_test")
 
 class Noddy(Document):

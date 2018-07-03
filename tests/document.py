@@ -7,7 +7,7 @@ from distutils.version import StrictVersion
 
 from datetime import datetime
 
-from fixtures import Base, PickleEmbedded, PickleTest
+from .fixtures import Base, PickleEmbedded, PickleTest
 
 from mongoengine import (
     connect, Q, CASCADE, NULLIFY, DENY,

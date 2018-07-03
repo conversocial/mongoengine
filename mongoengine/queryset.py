@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import pprint
 import re
 import copy
@@ -7,7 +9,7 @@ import operator
 import pymongo
 from bson.code import Code
 
-from mongoengine import signals
+from . import signals
 
 __all__ = ['queryset_manager', 'Q', 'InvalidQueryError',
            'DO_NOTHING', 'NULLIFY', 'CASCADE', 'DENY']
@@ -557,19 +559,19 @@ class QuerySet(object):
                 if field_name in document._fields:
                     field = document._fields[field_name]
                 elif document._dynamic:
-                    from base import BaseDynamicField
+                    from .base import BaseDynamicField
                     field = BaseDynamicField(db_field=field_name)
                 else:
                     raise InvalidQueryError('Cannot resolve field "%s"'
                                             % field_name)
             else:
-                from mongoengine.fields import ReferenceField, GenericReferenceField  # noqa
+                from .fields import ReferenceField, GenericReferenceField  # noqa
                 if isinstance(field, (ReferenceField, GenericReferenceField)):
                     raise InvalidQueryError('Cannot perform join in mongoDB: %s'
                                             % '__'.join(parts))
                 # Look up subfield on the previous field
                 new_field = field.lookup_member(field_name)
-                from base import ComplexBaseField
+                from .base import ComplexBaseField
                 if not new_field and isinstance(field, ComplexBaseField):
                     fields.append(field_name)
                     continue
@@ -646,7 +648,7 @@ class QuerySet(object):
                     if isinstance(field, basestring):
                         if op in match_operators and isinstance(value,
                                                                 basestring):
-                            from mongoengine import StringField
+                            from . import StringField
                             value = StringField.prepare_query_value(op, value)
                         else:
                             value = field
@@ -788,7 +790,7 @@ class QuerySet(object):
 
         .. versionadded:: 0.5
         """
-        from document import Document
+        from .document import Document
 
         docs = doc_or_docs
         return_one = False
@@ -928,7 +930,7 @@ class QuerySet(object):
 
         .. versionadded:: 0.3
         """
-        from document import MapReduceDocument
+        from .document import MapReduceDocument
 
         if not hasattr(self._collection, "map_reduce"):
             raise NotImplementedError("Requires MongoDB >= 1.7.1")
@@ -1083,7 +1085,7 @@ class QuerySet(object):
         .. versionadded:: 0.4
         .. versionchanged:: 0.5 - Fixed handling references
         """
-        from dereference import DeReference
+        from .dereference import DeReference
         return DeReference()(self._cursor.distinct(field), 1)
 
     def only(self, *fields):
@@ -1736,7 +1738,7 @@ class QuerySet(object):
 
         .. versionadded:: 0.5
         """
-        from dereference import DeReference
+        from .dereference import DeReference
         # Make select related work the same for querysets
         max_depth += 1
         return DeReference()(self, max_depth=max_depth)

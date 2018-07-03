@@ -1,8 +1,10 @@
+from __future__ import absolute_import
+
 import pymongo
 from pymongo import MongoClient, uri_parser
 from pymongo.read_preferences import ReadPreference
 
-import signals
+from . import signals
 
 
 __all__ = ['ConnectionError', 'connect', 'register_connection',
