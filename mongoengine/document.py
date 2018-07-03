@@ -78,16 +78,15 @@ class Document(six.with_metaclass(TopLevelDocumentMetaclass, BaseDocument)):
     """
     _base = True
 
-    @apply
-    def pk():
+    @property
+    def pk(self):
         """Primary key alias
         """
-        def fget(self):
-            return getattr(self, self._meta['id_field'])
+        return getattr(self, self._meta['id_field'])
 
-        def fset(self, value):
-            return setattr(self, self._meta['id_field'], value)
-        return property(fget, fset)
+    @pk.setter
+    def pk(self, value):
+        return setattr(self, self._meta['id_field'], value)
 
     @classmethod
     def _get_db(cls):
