@@ -2864,6 +2864,32 @@ class QuerySetTest(unittest.TestCase):
         self.assertEqual(plist[1], (20, False))
         self.assertEqual(plist[2], (30, True))
 
+    def test_scalar_primary_key(self):
+
+        class SettingValue(Document):
+            key = StringField(primary_key=True)
+            value = StringField()
+
+        SettingValue.drop_collection()
+        s = SettingValue(key="test", value="test value")
+        s.save()
+
+        val = SettingValue.objects.scalar('key', 'value')
+        self.assertEqual(list(val), [('test', 'test value')])
+
+    def test_scalar_with_db_field_mapping(self):
+
+        class SettingValue(Document):
+            key = StringField(db_field='k')
+            value = StringField()
+
+        SettingValue.drop_collection()
+        s = SettingValue(key="test", value="test value")
+        s.save()
+
+        val = SettingValue.objects.scalar('key', 'value')
+        self.assertEqual(list(val), [('test', 'test value')])
+
     def test_scalar_cursor_behaviour(self):
         """Ensure that a query returns a valid set of results.
         """
