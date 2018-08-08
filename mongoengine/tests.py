@@ -1,9 +1,13 @@
+from __future__ import absolute_import
+
 import six
 from mongoengine.connection import get_db
 
 
 class query_counter(object):
     """ Query_counter contextmanager to get the number of queries. """
+
+    __hash__ = None
 
     def __init__(self):
         """ Construct the query_counter. """
