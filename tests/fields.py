@@ -5,6 +5,7 @@ import uuid
 
 from decimal import Decimal
 
+import six
 from mongoengine import (
     connect, ValidationError,
     StringField, IntField, BooleanField, URLField, UUIDField,
@@ -340,15 +341,16 @@ class FieldTest(unittest.TestCase):
         self.assertNotEqual(log.date, d1)
         self.assertEqual(log.date, d2)
 
-        # Pre UTC dates microseconds below 1000 are dropped
-        # This does not seem to be true in PY3
-        d1 = datetime.datetime(1969, 12, 31, 23, 59, 59, 999)
-        d2 = datetime.datetime(1969, 12, 31, 23, 59, 59)
-        log.date = d1
-        log.save()
-        log.reload()
-        self.assertNotEqual(log.date, d1)
-        self.assertEqual(log.date, d2)
+        if not six.PY3:
+            # Pre UTC dates microseconds below 1000 are dropped
+            # This does not seem to be true in PY3
+            d1 = datetime.datetime(1969, 12, 31, 23, 59, 59, 999)
+            d2 = datetime.datetime(1969, 12, 31, 23, 59, 59)
+            log.date = d1
+            log.save()
+            log.reload()
+            self.assertNotEqual(log.date, d1)
+            self.assertEqual(log.date, d2)
 
         LogEntry.drop_collection()
 
