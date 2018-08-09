@@ -1,5 +1,8 @@
+from __future__ import absolute_import, print_function
+
 import pickle
 import pymongo
+import six
 import bson
 import unittest
 import warnings
@@ -7,7 +10,7 @@ from distutils.version import StrictVersion
 
 from datetime import datetime
 
-from fixtures import Base, PickleEmbedded, PickleTest
+from .fixtures import Base, PickleEmbedded, PickleTest
 
 from mongoengine import (
     connect, Q, CASCADE, NULLIFY, DENY,
@@ -44,7 +47,7 @@ class DocumentTest(unittest.TestCase):
         """Add FutureWarning for future allow_inhertiance default change.
         """
 
-        with warnings.catch_warnings(True) as errors:
+        with warnings.catch_warnings(record=True) as errors:
 
             class SimpleBase(Document):
                 a = IntField()
@@ -53,10 +56,10 @@ class DocumentTest(unittest.TestCase):
                 b = IntField()
 
             InheritedClass()
-            self.assertEquals(len(errors), 1)
+            self.assertEqual(len(errors), 1)
             warning = errors[0]
-            self.assertEquals(FutureWarning, warning.category)
-            self.assertTrue("InheritedClass" in warning.message.message)
+            self.assertEqual(FutureWarning, warning.category)
+            self.assertTrue('InheritedClass' in str(warning.message))
 
     def test_drop_collection(self):
         """Ensure that the collection may be dropped from the database.
@@ -111,18 +114,18 @@ class DocumentTest(unittest.TestCase):
 
         class DefaultNamingTest(Document):
             pass
-        self.assertEquals('default_naming_test',
+        self.assertEqual('default_naming_test',
                           DefaultNamingTest._get_collection_name())
 
         class CustomNamingTest(Document):
             meta = {'collection': 'pimp_my_collection'}
 
-        self.assertEquals('pimp_my_collection',
+        self.assertEqual('pimp_my_collection',
                           CustomNamingTest._get_collection_name())
 
         class DynamicNamingTest(Document):
             meta = {'collection': lambda c: "DYNAMO"}
-        self.assertEquals('DYNAMO', DynamicNamingTest._get_collection_name())
+        self.assertEqual('DYNAMO', DynamicNamingTest._get_collection_name())
 
         # Use Abstract class to handle backwards compatibility
         class BaseDocument(Document):
@@ -133,12 +136,12 @@ class DocumentTest(unittest.TestCase):
 
         class OldNamingConvention(BaseDocument):
             pass
-        self.assertEquals('oldnamingconvention',
+        self.assertEqual('oldnamingconvention',
                           OldNamingConvention._get_collection_name())
 
         class InheritedAbstractNamingTest(BaseDocument):
             meta = {'collection': 'wibble'}
-        self.assertEquals('wibble',
+        self.assertEqual('wibble',
                           InheritedAbstractNamingTest._get_collection_name())
 
         with warnings.catch_warnings(record=True) as w:
@@ -152,7 +155,7 @@ class DocumentTest(unittest.TestCase):
                 meta = {'collection': 'fail'}
 
             self.assertTrue(issubclass(w[0].category, SyntaxWarning))
-            self.assertEquals('non_abstract_base',
+            self.assertEqual('non_abstract_base',
                               InheritedDocumentFailTest._get_collection_name())
 
         # Mixin tests
@@ -163,7 +166,7 @@ class DocumentTest(unittest.TestCase):
 
         class OldMixinNamingConvention(Document, BaseMixin):
             pass
-        self.assertEquals('oldmixinnamingconvention',
+        self.assertEqual('oldmixinnamingconvention',
                           OldMixinNamingConvention._get_collection_name())
 
         class BaseMixin(object):
@@ -177,7 +180,7 @@ class DocumentTest(unittest.TestCase):
         class MyDocument(BaseDocument):
             pass
 
-        self.assertEquals('basedocument', MyDocument._get_collection_name())
+        self.assertEqual('basedocument', MyDocument._get_collection_name())
 
     def test_get_superclasses(self):
         """Ensure that the correct list of superclasses is assembled.
@@ -240,10 +243,10 @@ class DocumentTest(unittest.TestCase):
         h = Human()
         h.save()
 
-        self.assertEquals(Human.objects.count(), 1)
-        self.assertEquals(Mammal.objects.count(), 1)
-        self.assertEquals(Animal.objects.count(), 1)
-        self.assertEquals(Base.objects.count(), 1)
+        self.assertEqual(Human.objects.count(), 1)
+        self.assertEqual(Mammal.objects.count(), 1)
+        self.assertEqual(Animal.objects.count(), 1)
+        self.assertEqual(Base.objects.count(), 1)
         Base.drop_collection()
 
     def test_polymorphic_queries(self):
@@ -300,7 +303,7 @@ class DocumentTest(unittest.TestCase):
 
         list_stats = []
 
-        for i in xrange(10):
+        for _ in range(10):
             s = Stats()
             s.save()
             list_stats.append(s)
@@ -529,7 +532,7 @@ class DocumentTest(unittest.TestCase):
         Log.drop_collection()
 
         # Ensure that the collection handles up to its maximum
-        for i in range(10):
+        for _ in range(10):
             Log().save()
 
         self.assertEqual(len(Log.objects), 10)
@@ -564,13 +567,13 @@ class DocumentTest(unittest.TestCase):
         BlogPost.drop_collection()
         BlogPost.objects._collection.ensure_index([('tags', pymongo.ASCENDING)])
 
-        for i in xrange(0, 10):
-            tags = [("tag %i" % n) for n in xrange(0, i % 2)]
+        for i in range(0, 10):
+            tags = [("tag %i" % n) for n in range(0, i % 2)]
             BlogPost(tags=tags).save()
 
-        self.assertEquals(BlogPost.objects.count(), 10)
-        self.assertEquals(BlogPost.objects.hint().count(), 10)
-        self.assertEquals(
+        self.assertEqual(BlogPost.objects.count(), 10)
+        self.assertEqual(BlogPost.objects.hint().count(), 10)
+        self.assertEqual(
             BlogPost.objects.hint([('tags', pymongo.ASCENDING)]).count(),
             10)
 
@@ -586,12 +589,12 @@ class DocumentTest(unittest.TestCase):
         BlogPost.drop_collection()
         BlogPost.objects._collection.ensure_index([('tags', pymongo.ASCENDING)])
 
-        for i in xrange(0, 10):
-            tags = [("tag %i" % n) for n in xrange(0, i % 2)]
+        for i in range(0, 10):
+            tags = [("tag %i" % n) for n in range(0, i % 2)]
             BlogPost(tags=tags).save()
 
         with self.assertRaises(pymongo.errors.OperationFailure):
-            self.assertEquals(BlogPost.objects.hint([('ZZ', 1)]).count(), 10)
+            self.assertEqual(BlogPost.objects.hint([('ZZ', 1)]).count(), 10)
 
     def test_custom_id_field(self):
         """Ensure that documents may be created with custom primary keys.
@@ -666,7 +669,7 @@ class DocumentTest(unittest.TestCase):
         del(_document_registry['Place.NicePlace'])
 
         def query_without_importing_nice_place():
-            print Place.objects.all()
+            print(Place.objects.all())
         self.assertRaises(NotRegistered, query_without_importing_nice_place)
 
     def test_creation(self):
@@ -742,17 +745,17 @@ class DocumentTest(unittest.TestCase):
         doc.embedded_field.list_field.append(1)
         doc.embedded_field.dict_field['woot'] = "woot"
 
-        self.assertEquals(doc._get_changed_fields(), [
+        self.assertEqual(doc._get_changed_fields(), [
             'list_field', 'dict_field', 'embedded_field.list_field',
             'embedded_field.dict_field'])
         doc.save()
 
         doc = doc.reload(10)
-        self.assertEquals(doc._get_changed_fields(), [])
-        self.assertEquals(len(doc.list_field), 4)
-        self.assertEquals(len(doc.dict_field), 2)
-        self.assertEquals(len(doc.embedded_field.list_field), 4)
-        self.assertEquals(len(doc.embedded_field.dict_field), 2)
+        self.assertEqual(doc._get_changed_fields(), [])
+        self.assertEqual(len(doc.list_field), 4)
+        self.assertEqual(len(doc.dict_field), 2)
+        self.assertEqual(len(doc.embedded_field.list_field), 4)
+        self.assertEqual(len(doc.embedded_field.dict_field), 2)
 
     def test_reload_deleted_document_raises_doesnotexist(self):
         person = self.Person(name="Test User", age=20)
@@ -765,16 +768,16 @@ class DocumentTest(unittest.TestCase):
         """Ensure that dictionary-style field access works properly.
         """
         person = self.Person(name='Test User', age=30)
-        self.assertEquals(person['name'], 'Test User')
+        self.assertEqual(person['name'], 'Test User')
 
         self.assertRaises(KeyError, person.__getitem__, 'salary')
         self.assertRaises(KeyError, person.__setitem__, 'salary', 50)
 
         person['name'] = 'Another User'
-        self.assertEquals(person['name'], 'Another User')
+        self.assertEqual(person['name'], 'Another User')
 
         # Length = length(assigned fields + id)
-        self.assertEquals(len(person), 3)
+        self.assertEqual(len(person), 3)
 
         self.assertTrue('age' in person)
         person.age = None
@@ -852,7 +855,7 @@ class DocumentTest(unittest.TestCase):
         user.save()
 
         user.reload()
-        self.assertEquals(user.thing.count, 0)
+        self.assertEqual(user.thing.count, 0)
 
     def test_save_max_recursion_not_hit(self):
 
@@ -901,7 +904,7 @@ class DocumentTest(unittest.TestCase):
         p.save()
 
         p1.reload()
-        self.assertEquals(p1.name, p.parent.name)
+        self.assertEqual(p1.name, p.parent.name)
 
     def test_save_cascade_kwargs(self):
 
@@ -924,7 +927,7 @@ class DocumentTest(unittest.TestCase):
         p.save()
 
         p1.reload()
-        self.assertEquals(p1.name, p.parent.name)
+        self.assertEqual(p1.name, p.parent.name)
 
     def test_save_cascade_meta(self):
 
@@ -949,11 +952,11 @@ class DocumentTest(unittest.TestCase):
         p.save()
 
         p1.reload()
-        self.assertNotEquals(p1.name, p.parent.name)
+        self.assertNotEqual(p1.name, p.parent.name)
 
         p.save(cascade=True)
         p1.reload()
-        self.assertEquals(p1.name, p.parent.name)
+        self.assertEqual(p1.name, p.parent.name)
 
     def test_save_cascades_generically(self):
 
@@ -975,7 +978,7 @@ class DocumentTest(unittest.TestCase):
         p.save()
 
         p1.reload()
-        self.assertEquals(p1.name, p.parent.name)
+        self.assertEqual(p1.name, p.parent.name)
 
     def test_update(self):
         """Ensure that an existing document is updated instead of be overwritten.
@@ -990,7 +993,7 @@ class DocumentTest(unittest.TestCase):
         same_person.save()
 
         # Confirm only one object
-        self.assertEquals(self.Person.objects.count(), 1)
+        self.assertEqual(self.Person.objects.count(), 1)
 
         # reload
         person.reload()
@@ -1076,7 +1079,7 @@ class DocumentTest(unittest.TestCase):
         author.reload()
 
         p1 = self.Person.objects.first()
-        self.assertEquals(p1.name, author.name)
+        self.assertEqual(p1.name, author.name)
 
         def update_no_value_raises():
             person = self.Person.objects.first()
@@ -1153,40 +1156,40 @@ class DocumentTest(unittest.TestCase):
         doc.save()
 
         doc = Doc.objects.first()
-        self.assertEquals(doc._get_changed_fields(), [])
-        self.assertEquals(doc._delta(), ({}, {}))
+        self.assertEqual(doc._get_changed_fields(), [])
+        self.assertEqual(doc._delta(), ({}, {}))
 
         doc.string_field = 'hello'
-        self.assertEquals(doc._get_changed_fields(), ['string_field'])
-        self.assertEquals(doc._delta(), ({'string_field': 'hello'}, {}))
+        self.assertEqual(doc._get_changed_fields(), ['string_field'])
+        self.assertEqual(doc._delta(), ({'string_field': 'hello'}, {}))
 
         doc._changed_fields = []
         doc.int_field = 1
-        self.assertEquals(doc._get_changed_fields(), ['int_field'])
-        self.assertEquals(doc._delta(), ({'int_field': 1}, {}))
+        self.assertEqual(doc._get_changed_fields(), ['int_field'])
+        self.assertEqual(doc._delta(), ({'int_field': 1}, {}))
 
         doc._changed_fields = []
         dict_value = {'hello': 'world', 'ping': 'pong'}
         doc.dict_field = dict_value
-        self.assertEquals(doc._get_changed_fields(), ['dict_field'])
-        self.assertEquals(doc._delta(), ({'dict_field': dict_value}, {}))
+        self.assertEqual(doc._get_changed_fields(), ['dict_field'])
+        self.assertEqual(doc._delta(), ({'dict_field': dict_value}, {}))
 
         doc._changed_fields = []
         list_value = ['1', 2, {'hello': 'world'}]
         doc.list_field = list_value
-        self.assertEquals(doc._get_changed_fields(), ['list_field'])
-        self.assertEquals(doc._delta(), ({'list_field': list_value}, {}))
+        self.assertEqual(doc._get_changed_fields(), ['list_field'])
+        self.assertEqual(doc._delta(), ({'list_field': list_value}, {}))
 
         # Test unsetting
         doc._changed_fields = []
         doc.dict_field = {}
-        self.assertEquals(doc._get_changed_fields(), ['dict_field'])
-        self.assertEquals(doc._delta(), ({}, {'dict_field': 1}))
+        self.assertEqual(doc._get_changed_fields(), ['dict_field'])
+        self.assertEqual(doc._delta(), ({}, {'dict_field': 1}))
 
         doc._changed_fields = []
         doc.list_field = []
-        self.assertEquals(doc._get_changed_fields(), ['list_field'])
-        self.assertEquals(doc._delta(), ({}, {'list_field': 1}))
+        self.assertEqual(doc._get_changed_fields(), ['list_field'])
+        self.assertEqual(doc._delta(), ({}, {'list_field': 1}))
 
     def test_delta_recursive(self):
 
@@ -1208,8 +1211,8 @@ class DocumentTest(unittest.TestCase):
         doc.save()
 
         doc = Doc.objects.first()
-        self.assertEquals(doc._get_changed_fields(), [])
-        self.assertEquals(doc._delta(), ({}, {}))
+        self.assertEqual(doc._get_changed_fields(), [])
+        self.assertEqual(doc._delta(), ({}, {}))
 
         embedded_1 = Embedded()
         embedded_1.string_field = 'hello'
@@ -1218,7 +1221,7 @@ class DocumentTest(unittest.TestCase):
         embedded_1.list_field = ['1', 2, {'hello': 'world'}]
         doc.embedded_field = embedded_1
 
-        self.assertEquals(doc._get_changed_fields(), ['embedded_field'])
+        self.assertEqual(doc._get_changed_fields(), ['embedded_field'])
 
         embedded_delta = {
             'string_field': 'hello',
@@ -1226,33 +1229,33 @@ class DocumentTest(unittest.TestCase):
             'dict_field': {'hello': 'world'},
             'list_field': ['1', 2, {'hello': 'world'}]
         }
-        self.assertEquals(doc.embedded_field._delta(), (embedded_delta, {}))
+        self.assertEqual(doc.embedded_field._delta(), (embedded_delta, {}))
         embedded_delta.update({
             '_cls': 'Embedded',
         })
-        self.assertEquals(doc._delta(),
+        self.assertEqual(doc._delta(),
                           ({'embedded_field': embedded_delta}, {}))
 
         doc.save()
         doc = doc.reload(10)
 
         doc.embedded_field.dict_field = {}
-        self.assertEquals(doc._get_changed_fields(),
+        self.assertEqual(doc._get_changed_fields(),
                           ['embedded_field.dict_field'])
-        self.assertEquals(doc.embedded_field._delta(), ({}, {'dict_field': 1}))
-        self.assertEquals(doc._delta(), ({}, {'embedded_field.dict_field': 1}))
+        self.assertEqual(doc.embedded_field._delta(), ({}, {'dict_field': 1}))
+        self.assertEqual(doc._delta(), ({}, {'embedded_field.dict_field': 1}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.dict_field, {})
+        self.assertEqual(doc.embedded_field.dict_field, {})
 
         doc.embedded_field.list_field = []
-        self.assertEquals(doc._get_changed_fields(),
+        self.assertEqual(doc._get_changed_fields(),
                           ['embedded_field.list_field'])
-        self.assertEquals(doc.embedded_field._delta(), ({}, {'list_field': 1}))
-        self.assertEquals(doc._delta(), ({}, {'embedded_field.list_field': 1}))
+        self.assertEqual(doc.embedded_field._delta(), ({}, {'list_field': 1}))
+        self.assertEqual(doc._delta(), ({}, {'embedded_field.list_field': 1}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.list_field, [])
+        self.assertEqual(doc.embedded_field.list_field, [])
 
         embedded_2 = Embedded()
         embedded_2.string_field = 'hello'
@@ -1261,9 +1264,9 @@ class DocumentTest(unittest.TestCase):
         embedded_2.list_field = ['1', 2, {'hello': 'world'}]
 
         doc.embedded_field.list_field = ['1', 2, embedded_2]
-        self.assertEquals(doc._get_changed_fields(),
+        self.assertEqual(doc._get_changed_fields(),
                           ['embedded_field.list_field'])
-        self.assertEquals(doc.embedded_field._delta(), ({
+        self.assertEqual(doc.embedded_field._delta(), ({
             'list_field': ['1', 2, {
                 '_cls': 'Embedded',
                 'string_field': 'hello',
@@ -1273,7 +1276,7 @@ class DocumentTest(unittest.TestCase):
             }]
         }, {}))
 
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'embedded_field.list_field': [
                 '1',
@@ -1287,35 +1290,35 @@ class DocumentTest(unittest.TestCase):
         doc.save()
         doc = doc.reload(10)
 
-        self.assertEquals(doc.embedded_field.list_field[0], '1')
-        self.assertEquals(doc.embedded_field.list_field[1], 2)
+        self.assertEqual(doc.embedded_field.list_field[0], '1')
+        self.assertEqual(doc.embedded_field.list_field[1], 2)
         # TODO COLIN: Fix? !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         return
         for k in doc.embedded_field.list_field[2]._fields:
-            self.assertEquals(doc.embedded_field.list_field[2][k],
+            self.assertEqual(doc.embedded_field.list_field[2][k],
                               embedded_2[k])
 
         doc.embedded_field.list_field[2].string_field = 'world'
-        self.assertEquals(
+        self.assertEqual(
             doc._get_changed_fields(),
             ['embedded_field.list_field.2.string_field'])
-        self.assertEquals(
+        self.assertEqual(
             doc.embedded_field._delta(),
             ({'list_field.2.string_field': 'world'}, {}))
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'embedded_field.list_field.2.string_field': 'world'}, {}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.list_field[2].string_field,
+        self.assertEqual(doc.embedded_field.list_field[2].string_field,
                           'world')
 
         # Test multiple assignments
         doc.embedded_field.list_field[2].string_field = 'hello world'
         doc.embedded_field.list_field[2] = doc.embedded_field.list_field[2]
-        self.assertEquals(doc._get_changed_fields(),
+        self.assertEqual(doc._get_changed_fields(),
                           ['embedded_field.list_field'])
-        self.assertEquals(
+        self.assertEqual(
             doc.embedded_field._delta(),
             ({'list_field': [
                 '1',
@@ -1326,7 +1329,7 @@ class DocumentTest(unittest.TestCase):
                  'list_field': ['1', 2, {'hello': 'world'}],
                  'dict_field': {'hello': 'world'}}]},
              {}))
-        self.assertEquals(doc._delta(), ({
+        self.assertEqual(doc._delta(), ({
             'embedded_field.list_field': ['1', 2, {
                 '_cls': 'Embedded',
                 'string_field': 'hello world',
@@ -1336,12 +1339,12 @@ class DocumentTest(unittest.TestCase):
             ]}, {}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.list_field[2].string_field,
+        self.assertEqual(doc.embedded_field.list_field[2].string_field,
                           'hello world')
 
         # Test list native methods
         doc.embedded_field.list_field[2].list_field.pop(0)
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'embedded_field.list_field.2.list_field': [2,
                                                          {'hello': 'world'}]},
@@ -1350,7 +1353,7 @@ class DocumentTest(unittest.TestCase):
         doc = doc.reload(10)
 
         doc.embedded_field.list_field[2].list_field.append(1)
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'embedded_field.list_field.2.list_field': [2,
                                                          {'hello': 'world'},
@@ -1358,26 +1361,26 @@ class DocumentTest(unittest.TestCase):
              {}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(
+        self.assertEqual(
             doc.embedded_field.list_field[2].list_field,
             [2, {'hello': 'world'}, 1])
 
         doc.embedded_field.list_field[2].list_field.sort()
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(
+        self.assertEqual(
             doc.embedded_field.list_field[2].list_field,
             [1, 2, {'hello': 'world'}])
 
         del(doc.embedded_field.list_field[2].list_field[2]['hello'])
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'embedded_field.list_field.2.list_field': [1, 2, {}]}, {}))
         doc.save()
         doc = doc.reload(10)
 
         del(doc.embedded_field.list_field[2].list_field)
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({}, {'embedded_field.list_field.2.list_field': 1}))
 
@@ -1389,10 +1392,10 @@ class DocumentTest(unittest.TestCase):
         doc = doc.reload(10)
 
         doc.dict_field['Embedded'].string_field = 'Hello World'
-        self.assertEquals(
+        self.assertEqual(
             doc._get_changed_fields(),
             ['dict_field.Embedded.string_field'])
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'dict_field.Embedded.string_field': 'Hello World'}, {}))
 
@@ -1409,40 +1412,40 @@ class DocumentTest(unittest.TestCase):
         doc.save()
 
         doc = Doc.objects.first()
-        self.assertEquals(doc._get_changed_fields(), [])
-        self.assertEquals(doc._delta(), ({}, {}))
+        self.assertEqual(doc._get_changed_fields(), [])
+        self.assertEqual(doc._delta(), ({}, {}))
 
         doc.string_field = 'hello'
-        self.assertEquals(doc._get_changed_fields(), ['db_string_field'])
-        self.assertEquals(doc._delta(), ({'db_string_field': 'hello'}, {}))
+        self.assertEqual(doc._get_changed_fields(), ['db_string_field'])
+        self.assertEqual(doc._delta(), ({'db_string_field': 'hello'}, {}))
 
         doc._changed_fields = []
         doc.int_field = 1
-        self.assertEquals(doc._get_changed_fields(), ['db_int_field'])
-        self.assertEquals(doc._delta(), ({'db_int_field': 1}, {}))
+        self.assertEqual(doc._get_changed_fields(), ['db_int_field'])
+        self.assertEqual(doc._delta(), ({'db_int_field': 1}, {}))
 
         doc._changed_fields = []
         dict_value = {'hello': 'world', 'ping': 'pong'}
         doc.dict_field = dict_value
-        self.assertEquals(doc._get_changed_fields(), ['db_dict_field'])
-        self.assertEquals(doc._delta(), ({'db_dict_field': dict_value}, {}))
+        self.assertEqual(doc._get_changed_fields(), ['db_dict_field'])
+        self.assertEqual(doc._delta(), ({'db_dict_field': dict_value}, {}))
 
         doc._changed_fields = []
         list_value = ['1', 2, {'hello': 'world'}]
         doc.list_field = list_value
-        self.assertEquals(doc._get_changed_fields(), ['db_list_field'])
-        self.assertEquals(doc._delta(), ({'db_list_field': list_value}, {}))
+        self.assertEqual(doc._get_changed_fields(), ['db_list_field'])
+        self.assertEqual(doc._delta(), ({'db_list_field': list_value}, {}))
 
         # Test unsetting
         doc._changed_fields = []
         doc.dict_field = {}
-        self.assertEquals(doc._get_changed_fields(), ['db_dict_field'])
-        self.assertEquals(doc._delta(), ({}, {'db_dict_field': 1}))
+        self.assertEqual(doc._get_changed_fields(), ['db_dict_field'])
+        self.assertEqual(doc._delta(), ({}, {'db_dict_field': 1}))
 
         doc._changed_fields = []
         doc.list_field = []
-        self.assertEquals(doc._get_changed_fields(), ['db_list_field'])
-        self.assertEquals(doc._delta(), ({}, {'db_list_field': 1}))
+        self.assertEqual(doc._get_changed_fields(), ['db_list_field'])
+        self.assertEqual(doc._delta(), ({}, {'db_list_field': 1}))
 
         # Test it saves that data
         doc = Doc()
@@ -1455,10 +1458,10 @@ class DocumentTest(unittest.TestCase):
         doc.save()
         doc = doc.reload(10)
 
-        self.assertEquals(doc.string_field, 'hello')
-        self.assertEquals(doc.int_field, 1)
-        self.assertEquals(doc.dict_field, {'hello': 'world'})
-        self.assertEquals(doc.list_field, ['1', 2, {'hello': 'world'}])
+        self.assertEqual(doc.string_field, 'hello')
+        self.assertEqual(doc.int_field, 1)
+        self.assertEqual(doc.dict_field, {'hello': 'world'})
+        self.assertEqual(doc.list_field, ['1', 2, {'hello': 'world'}])
 
     def test_delta_recursive_db_field(self):
 
@@ -1481,8 +1484,8 @@ class DocumentTest(unittest.TestCase):
         doc.save()
 
         doc = Doc.objects.first()
-        self.assertEquals(doc._get_changed_fields(), [])
-        self.assertEquals(doc._delta(), ({}, {}))
+        self.assertEqual(doc._get_changed_fields(), [])
+        self.assertEqual(doc._delta(), ({}, {}))
 
         embedded_1 = Embedded()
         embedded_1.string_field = 'hello'
@@ -1491,7 +1494,7 @@ class DocumentTest(unittest.TestCase):
         embedded_1.list_field = ['1', 2, {'hello': 'world'}]
         doc.embedded_field = embedded_1
 
-        self.assertEquals(doc._get_changed_fields(), ['db_embedded_field'])
+        self.assertEqual(doc._get_changed_fields(), ['db_embedded_field'])
 
         embedded_delta = {
             'db_string_field': 'hello',
@@ -1499,37 +1502,37 @@ class DocumentTest(unittest.TestCase):
             'db_dict_field': {'hello': 'world'},
             'db_list_field': ['1', 2, {'hello': 'world'}]
         }
-        self.assertEquals(doc.embedded_field._delta(), (embedded_delta, {}))
+        self.assertEqual(doc.embedded_field._delta(), (embedded_delta, {}))
         embedded_delta.update({
             '_cls': 'Embedded',
         })
-        self.assertEquals(doc._delta(),
+        self.assertEqual(doc._delta(),
                           ({'db_embedded_field': embedded_delta}, {}))
 
         doc.save()
         doc = doc.reload(10)
 
         doc.embedded_field.dict_field = {}
-        self.assertEquals(doc._get_changed_fields(),
+        self.assertEqual(doc._get_changed_fields(),
                           ['db_embedded_field.db_dict_field'])
-        self.assertEquals(doc.embedded_field._delta(),
+        self.assertEqual(doc.embedded_field._delta(),
                           ({}, {'db_dict_field': 1}))
-        self.assertEquals(doc._delta(),
+        self.assertEqual(doc._delta(),
                           ({}, {'db_embedded_field.db_dict_field': 1}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.dict_field, {})
+        self.assertEqual(doc.embedded_field.dict_field, {})
 
         doc.embedded_field.list_field = []
-        self.assertEquals(doc._get_changed_fields(),
+        self.assertEqual(doc._get_changed_fields(),
                           ['db_embedded_field.db_list_field'])
-        self.assertEquals(doc.embedded_field._delta(),
+        self.assertEqual(doc.embedded_field._delta(),
                           ({}, {'db_list_field': 1}))
-        self.assertEquals(doc._delta(),
+        self.assertEqual(doc._delta(),
                           ({}, {'db_embedded_field.db_list_field': 1}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.list_field, [])
+        self.assertEqual(doc.embedded_field.list_field, [])
 
         embedded_2 = Embedded()
         embedded_2.string_field = 'hello'
@@ -1538,9 +1541,9 @@ class DocumentTest(unittest.TestCase):
         embedded_2.list_field = ['1', 2, {'hello': 'world'}]
 
         doc.embedded_field.list_field = ['1', 2, embedded_2]
-        self.assertEquals(doc._get_changed_fields(),
+        self.assertEqual(doc._get_changed_fields(),
                           ['db_embedded_field.db_list_field'])
-        self.assertEquals(doc.embedded_field._delta(), ({
+        self.assertEqual(doc.embedded_field._delta(), ({
             'db_list_field': ['1', 2, {
                 '_cls': 'Embedded',
                 'db_string_field': 'hello',
@@ -1550,7 +1553,7 @@ class DocumentTest(unittest.TestCase):
             }]
         }, {}))
 
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'db_embedded_field.db_list_field': [
                 '1',
@@ -1564,32 +1567,32 @@ class DocumentTest(unittest.TestCase):
         doc.save()
         doc = doc.reload(10)
 
-        self.assertEquals(doc.embedded_field.list_field[0], '1')
-        self.assertEquals(doc.embedded_field.list_field[1], 2)
+        self.assertEqual(doc.embedded_field.list_field[0], '1')
+        self.assertEqual(doc.embedded_field.list_field[1], 2)
 
         return  # Colin style
         doc.embedded_field.list_field[2]['string_field'] = 'world'
-        self.assertEquals(
+        self.assertEqual(
             doc._get_changed_fields(),
             ['db_embedded_field.db_list_field.2.db_string_field'])
-        self.assertEquals(
+        self.assertEqual(
             doc.embedded_field._delta(),
             ({'db_list_field.2.db_string_field': 'world'}, {}))
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'db_embedded_field.db_list_field.2.db_string_field': 'world'},
              {}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.list_field[2].string_field,
+        self.assertEqual(doc.embedded_field.list_field[2].string_field,
                           'world')
 
         # Test multiple assignments
         doc.embedded_field.list_field[2].string_field = 'hello world'
         doc.embedded_field.list_field[2] = doc.embedded_field.list_field[2]
-        self.assertEquals(doc._get_changed_fields(),
+        self.assertEqual(doc._get_changed_fields(),
                           ['db_embedded_field.db_list_field'])
-        self.assertEquals(
+        self.assertEqual(
             doc.embedded_field._delta(),
             ({'db_list_field': [
                 '1',
@@ -1600,7 +1603,7 @@ class DocumentTest(unittest.TestCase):
                  'db_list_field': ['1', 2, {'hello': 'world'}],
                  'db_dict_field': {'hello': 'world'}}]},
              {}))
-        self.assertEquals(doc._delta(), ({
+        self.assertEqual(doc._delta(), ({
             'db_embedded_field.db_list_field': ['1', 2, {
                 '_cls': 'Embedded',
                 'db_string_field': 'hello world',
@@ -1610,12 +1613,12 @@ class DocumentTest(unittest.TestCase):
             ]}, {}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.list_field[2].string_field,
+        self.assertEqual(doc.embedded_field.list_field[2].string_field,
                           'hello world')
 
         # Test list native methods
         doc.embedded_field.list_field[2].list_field.pop(0)
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'db_embedded_field.db_list_field.2.db_list_field': [
                 2,
@@ -1625,7 +1628,7 @@ class DocumentTest(unittest.TestCase):
         doc = doc.reload(10)
 
         doc.embedded_field.list_field[2].list_field.append(1)
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'db_embedded_field.db_list_field.2.db_list_field': [
                 2,
@@ -1634,17 +1637,17 @@ class DocumentTest(unittest.TestCase):
              {}))
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.list_field[2].list_field,
+        self.assertEqual(doc.embedded_field.list_field[2].list_field,
                           [2, {'hello': 'world'}, 1])
 
         doc.embedded_field.list_field[2].list_field.sort()
         doc.save()
         doc = doc.reload(10)
-        self.assertEquals(doc.embedded_field.list_field[2].list_field,
+        self.assertEqual(doc.embedded_field.list_field[2].list_field,
                           [1, 2, {'hello': 'world'}])
 
         del(doc.embedded_field.list_field[2].list_field[2]['hello'])
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({'db_embedded_field.db_list_field.2.db_list_field': [1, 2, {}]},
              {}))
@@ -1652,7 +1655,7 @@ class DocumentTest(unittest.TestCase):
         doc = doc.reload(10)
 
         del(doc.embedded_field.list_field[2].list_field)
-        self.assertEquals(
+        self.assertEqual(
             doc._delta(),
             ({}, {'db_embedded_field.db_list_field.2.db_list_field': 1}))
 
@@ -1681,9 +1684,9 @@ class DocumentTest(unittest.TestCase):
         same_person.save()
 
         person = self.Person.objects.get()
-        self.assertEquals(person.name, 'User')
-        self.assertEquals(person.age, 21)
-        self.assertEquals(person.active, False)
+        self.assertEqual(person.name, 'User')
+        self.assertEqual(person.age, 21)
+        self.assertEqual(person.active, False)
 
     def test_delete(self):
         """Ensure that document may be deleted using the delete method.
@@ -1899,10 +1902,10 @@ class DocumentTest(unittest.TestCase):
 
         t = TestDoc.objects.first()
 
-        self.assertEquals(t.age, 19)
-        self.assertEquals(t.comment, "great!")
-        self.assertEquals(t.data, "test")
-        self.assertEquals(t.count, 12)
+        self.assertEqual(t.age, 19)
+        self.assertEqual(t.comment, "great!")
+        self.assertEqual(t.data, "test")
+        self.assertEqual(t.count, 12)
 
     def test_save_reference(self):
         """Ensure that a document reference field may be saved in the database.
@@ -2325,8 +2328,8 @@ class DocumentTest(unittest.TestCase):
         A().save()
         B(foo=True).save()
 
-        self.assertEquals(A.objects.count(), 2)
-        self.assertEquals(B.objects.count(), 1)
+        self.assertEqual(A.objects.count(), 2)
+        self.assertEqual(B.objects.count(), 1)
         A.drop_collection()
         B.drop_collection()
 
@@ -2387,13 +2390,13 @@ class DocumentTest(unittest.TestCase):
         pickled_doc = pickle.dumps(pickle_doc)
         resurrected = pickle.loads(pickled_doc)
 
-        self.assertEquals(resurrected, pickle_doc)
+        self.assertEqual(resurrected, pickle_doc)
 
         resurrected.string = "Two"
         resurrected.save()
 
         pickle_doc = pickle_doc.reload()
-        self.assertEquals(resurrected, pickle_doc)
+        self.assertEqual(resurrected, pickle_doc)
 
     def test_throw_invalid_document_error(self):
 
@@ -2416,7 +2419,7 @@ class DocumentTest(unittest.TestCase):
         a = A()
         a.save()
         a.reload()
-        self.assertEquals(a.b.field1, 'field1')
+        self.assertEqual(a.b.field1, 'field1')
 
         class C(EmbeddedDocument):
             c_field = StringField(default='cfield')
@@ -2433,7 +2436,7 @@ class DocumentTest(unittest.TestCase):
         a.save()
 
         a.reload()
-        self.assertEquals(a.b.field2.c_field, 'new value')
+        self.assertEqual(a.b.field2.c_field, 'new value')
 
     def test_can_save_false_values(self):
         """Ensures you can save False values on save"""
@@ -2447,7 +2450,7 @@ class DocumentTest(unittest.TestCase):
         d.archived = False
         d.save()
 
-        self.assertEquals(Doc.objects(archived=False).count(), 1)
+        self.assertEqual(Doc.objects(archived=False).count(), 1)
 
     def test_can_save_false_values_dynamic(self):
         """Ensures you can save False values on dynamic docs"""
@@ -2460,7 +2463,7 @@ class DocumentTest(unittest.TestCase):
         d.archived = False
         d.save()
 
-        self.assertEquals(Doc.objects(archived=False).count(), 1)
+        self.assertEqual(Doc.objects(archived=False).count(), 1)
 
     def test_do_not_save_unchanged_references(self):
         """Ensures cascading saves dont auto update"""
@@ -2558,6 +2561,7 @@ class DocumentTest(unittest.TestCase):
         class User(Document):
             name = StringField()
 
+        @six.python_2_unicode_compatible
         class Book(Document):
             name = StringField()
             author = ReferenceField(User)
@@ -2565,9 +2569,6 @@ class DocumentTest(unittest.TestCase):
             meta = {
                 'ordering': ['+name']
             }
-
-            def __unicode__(self):
-                return self.name
 
             def __str__(self):
                 return self.name
@@ -2609,33 +2610,34 @@ class DocumentTest(unittest.TestCase):
 
         # Checks
         self.assertEqual(
-            u",".join([str(b) for b in Book.objects.all()]),
-            "1,2,3,4,5,6,7,8,9")
+            u','.join([six.text_type(b) for b in Book.objects.all()]),
+            u'1,2,3,4,5,6,7,8,9')
         # bob related books
         self.assertEqual(
-            u",".join([str(b) for b in
-                       Book.objects.filter(Q(extra__a=bob) |
-                                           Q(author=bob) |
-                                           Q(extra__b=bob))]),
-            "1,2,3,4")
+            u','.join([six.text_type(b) for b in
+                Book.objects.filter(Q(extra__a=bob) |
+                                    Q(author=bob) |
+                                    Q(extra__b=bob))]),
+            u'1,2,3,4')
 
         # Susan & Karl related books
         self.assertEqual(
-            u",".join([str(b) for b in Book.objects.filter(
-                        Q(extra__a__all=[karl, susan]) |
-                        Q(author__all=[karl, susan]) |
-                        Q(extra__b__all=[karl.to_dbref(), susan.to_dbref()]))]),
-            "1")
+            u','.join([six.text_type(b) for b in
+                Book.objects.filter(Q(extra__a__all=[karl, susan]) |
+                                    Q(author__all=[karl, susan]) |
+                                    Q(extra__b__all=[
+                                        karl.to_dbref(), susan.to_dbref()]))]),
+            u'1')
 
         # $Where
         self.assertEqual(
-            u",".join([str(b) for b in
+            ','.join([six.text_type(b) for b in
                        Book.objects.filter(
-                           __raw__={"$where": """
+                           __raw__={'$where': """
                                         function(){
                                             return this.name == '1' ||
                                                    this.name == '2';}"""})]),
-            "1,2")
+            '1,2')
 
     def test_document_equality(self):
         class A(Document):
@@ -2821,7 +2823,7 @@ class ShardedDocumentTest(unittest.TestCase):
         author.reload()
 
         p1 = self.ShardedPerson.objects.first()
-        self.assertEquals(p1.name, author.name)
+        self.assertEqual(p1.name, author.name)
 
     def test_sharded_document_delete(self):
         """Ensure that document may be deleted using the delete method."""

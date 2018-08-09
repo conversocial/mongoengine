@@ -1,11 +1,14 @@
+from __future__ import absolute_import
+
 import pymongo
+import six
 from bson.dbref import DBRef
 
-from mongoengine import signals
-from base import (DocumentMetaclass, TopLevelDocumentMetaclass, BaseDocument,
+from . import signals
+from .base import (DocumentMetaclass, TopLevelDocumentMetaclass, BaseDocument,
                   BaseDict, BaseList)
-from queryset import OperationError, QuerySet
-from connection import get_db, DEFAULT_CONNECTION_NAME
+from .queryset import OperationError, QuerySet
+from .connection import get_db, DEFAULT_CONNECTION_NAME
 
 __all__ = ['Document', 'EmbeddedDocument', 'DynamicDocument',
            'DynamicEmbeddedDocument', 'OperationError',
@@ -16,14 +19,13 @@ class InvalidCollectionError(Exception):
     pass
 
 
-class EmbeddedDocument(BaseDocument):
+class EmbeddedDocument(six.with_metaclass(DocumentMetaclass, BaseDocument)):
     """A :class:`~mongoengine.Document` that isn't stored in its own
     collection.  :class:`~mongoengine.EmbeddedDocument`\ s should be used as
     fields on :class:`~mongoengine.Document`\ s through the
     :class:`~mongoengine.EmbeddedDocumentField` field type.
     """
-
-    __metaclass__ = DocumentMetaclass
+    _base = True
 
     def __init__(self, *args, **kwargs):
         super(EmbeddedDocument, self).__init__(*args, **kwargs)
@@ -41,7 +43,7 @@ class EmbeddedDocument(BaseDocument):
             super(EmbeddedDocument, self).__delattr__(*args, **kwargs)
 
 
-class Document(BaseDocument):
+class Document(six.with_metaclass(TopLevelDocumentMetaclass, BaseDocument)):
     """The base class used for defining the structure and properties of
     collections of documents stored in MongoDB. Inherit from this class, and
     add fields as class attributes to define a document's structure.
@@ -74,18 +76,17 @@ class Document(BaseDocument):
     names. Index direction may be specified by prefixing the field names with
     a **+** or **-** sign.
     """
-    __metaclass__ = TopLevelDocumentMetaclass
+    _base = True
 
-    @apply
-    def pk():
+    @property
+    def pk(self):
         """Primary key alias
         """
-        def fget(self):
-            return getattr(self, self._meta['id_field'])
+        return getattr(self, self._meta['id_field'])
 
-        def fset(self, value):
-            return setattr(self, self._meta['id_field'], value)
-        return property(fget, fset)
+    @pk.setter
+    def pk(self, value):
+        return setattr(self, self._meta['id_field'], value)
 
     @classmethod
     def _get_db(cls):
@@ -231,11 +232,11 @@ class Document(BaseDocument):
                 kwargs['_refs'] = _refs
                 self.cascade_save(**kwargs)
 
-        except pymongo.errors.OperationFailure, err:
+        except pymongo.errors.OperationFailure as err:
             message = 'Could not save document (%s)'
-            if u'duplicate key' in unicode(err):
+            if u'duplicate key' in six.text_type(err):
                 message = u'Tried to save duplicate unique keys (%s)'
-            raise OperationError(message % unicode(err))
+            raise OperationError(message % six.text_type(err))
         id_field = self._meta['id_field']
         self[id_field] = self._fields[id_field].to_python(object_id)
 
@@ -245,7 +246,7 @@ class Document(BaseDocument):
 
     def cascade_save(self, *args, **kwargs):
         """Recursively saves any references / generic references on an object"""
-        from fields import ReferenceField, GenericReferenceField
+        from .fields import ReferenceField, GenericReferenceField
         _refs = kwargs.get('_refs', []) or []
         for name, cls in self._fields.items():
             if not isinstance(cls, (ReferenceField, GenericReferenceField)):
@@ -305,7 +306,7 @@ class Document(BaseDocument):
         try:
             self._qs.filter(**self._object_key).delete(
                 w=w, _from_doc_delete=True)
-        except pymongo.errors.OperationFailure, err:
+        except pymongo.errors.OperationFailure as err:
             message = u'Could not delete document (%s)' % err.message
             raise OperationError(message)
 
@@ -317,7 +318,7 @@ class Document(BaseDocument):
 
         .. versionadded:: 0.5
         """
-        from dereference import DeReference
+        from .dereference import DeReference
         self._data = DeReference()(self._data, max_depth)
         return self
 
@@ -373,13 +374,13 @@ class Document(BaseDocument):
         """Drops the entire collection associated with this
         :class:`~mongoengine.Document` type from the database.
         """
-        from mongoengine.queryset import QuerySet
+        from .queryset import QuerySet
         db = cls._get_db()
         db.drop_collection(cls._get_collection_name())
         QuerySet._reset_already_indexed(cls)
 
 
-class DynamicDocument(Document):
+class DynamicDocument(six.with_metaclass(TopLevelDocumentMetaclass, Document)):
     """A Dynamic Document class allowing flexible, expandable and uncontrolled
     schemas.  As a :class:`~mongoengine.Document` subclass, acts in the same
     way as an ordinary document but has expando style properties.  Any data
@@ -392,7 +393,7 @@ class DynamicDocument(Document):
 
         There is one caveat on Dynamic Documents: fields cannot start with `_`
     """
-    __metaclass__ = TopLevelDocumentMetaclass
+    _base = True
     _dynamic = True
 
     def __delattr__(self, *args, **kwargs):
@@ -405,13 +406,12 @@ class DynamicDocument(Document):
             super(DynamicDocument, self).__delattr__(*args, **kwargs)
 
 
-class DynamicEmbeddedDocument(EmbeddedDocument):
+class DynamicEmbeddedDocument(six.with_metaclass(DocumentMetaclass, EmbeddedDocument)):
     """A Dynamic Embedded Document class allowing flexible, expandable and
     uncontrolled schemas. See :class:`~mongoengine.DynamicDocument` for more
     information about dynamic documents.
     """
-
-    __metaclass__ = DocumentMetaclass
+    _base = True
     _dynamic = True
 
     def __delattr__(self, *args, **kwargs):

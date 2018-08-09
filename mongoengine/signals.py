@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import absolute_import
+
 from blinker import Namespace
 
 __all__ = ['pre_connect', 'post_connect', 'pre_init', 'post_init',

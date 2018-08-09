@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import, print_function
 
 import timeit
 
@@ -9,13 +10,13 @@ def cprofile_main():
     connection.drop_database('timeit_test')
     connection.disconnect()
 
-    from mongoengine import Document, DictField, connect
+    from .mongoengine import Document, DictField, connect
     connect("timeit_test")
 
     class Noddy(Document):
         fields = DictField()
 
-    for i in xrange(1):
+    for i in range(1):
         noddy = Noddy()
         for j in range(20):
             noddy.fields["key" + str(j)] = "value " + str(j)
@@ -95,10 +96,10 @@ myNoddys = noddy.find()
 [n for n in myNoddys] # iterate
 """
 
-    print "-" * 100
-    print """Creating 10000 dictionaries - Pymongo"""
+    print("-" * 100)
+    print("""Creating 10000 dictionaries - Pymongo""")
     t = timeit.Timer(stmt=stmt, setup=setup)
-    print t.timeit(1)
+    print(t.timeit(1))
 
     setup = """
 from pymongo import Connection
@@ -106,7 +107,7 @@ connection = Connection()
 connection.drop_database('timeit_test')
 connection.disconnect()
 
-from mongoengine import Document, DictField, connect
+from .mongoengine import Document, DictField, connect
 connect("timeit_test")
 
 class Noddy(Document):
@@ -124,10 +125,10 @@ myNoddys = Noddy.objects()
 [n for n in myNoddys] # iterate
 """
 
-    print "-" * 100
-    print """Creating 10000 dictionaries - MongoEngine"""
+    print("-" * 100)
+    print("""Creating 10000 dictionaries - MongoEngine""")
     t = timeit.Timer(stmt=stmt, setup=setup)
-    print t.timeit(1)
+    print(t.timeit(1))
 
     stmt = """
 for i in xrange(10000):
@@ -140,10 +141,10 @@ myNoddys = Noddy.objects()
 [n for n in myNoddys] # iterate
 """
 
-    print "-" * 100
-    print """Creating 10000 dictionaries - MongoEngine, safe=False, validate=False"""
+    print("-" * 100)
+    print("""Creating 10000 dictionaries - MongoEngine, safe=False, validate=False""")
     t = timeit.Timer(stmt=stmt, setup=setup)
-    print t.timeit(1)
+    print(t.timeit(1))
 
 
     stmt = """
@@ -157,10 +158,10 @@ myNoddys = Noddy.objects()
 [n for n in myNoddys] # iterate
 """
 
-    print "-" * 100
-    print """Creating 10000 dictionaries - MongoEngine, safe=False, validate=False, cascade=False"""
+    print("-" * 100)
+    print("""Creating 10000 dictionaries - MongoEngine, safe=False, validate=False, cascade=False""")
     t = timeit.Timer(stmt=stmt, setup=setup)
-    print t.timeit(1)
+    print(t.timeit(1))
 
     stmt = """
 for i in xrange(10000):
@@ -173,10 +174,10 @@ myNoddys = Noddy.objects()
 [n for n in myNoddys] # iterate
 """
 
-    print "-" * 100
-    print """Creating 10000 dictionaries - MongoEngine, force=True"""
+    print("-" * 100)
+    print("""Creating 10000 dictionaries - MongoEngine, force=True""")
     t = timeit.Timer(stmt=stmt, setup=setup)
-    print t.timeit(1)
+    print(t.timeit(1))
 
 if __name__ == "__main__":
     main()

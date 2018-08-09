@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import datetime
 import time
 import decimal
@@ -5,13 +7,14 @@ import gridfs
 import re
 import uuid
 
+import six
 from bson import Binary, DBRef, SON, ObjectId
 
-from base import (BaseField, ComplexBaseField, ObjectIdField,
+from .base import (BaseField, ComplexBaseField, ObjectIdField,
                   ValidationError, get_document)
-from queryset import DO_NOTHING, QuerySet
-from document import Document, EmbeddedDocument
-from connection import get_db, DEFAULT_CONNECTION_NAME
+from .queryset import DO_NOTHING, QuerySet
+from .document import Document, EmbeddedDocument
+from .connection import get_db, DEFAULT_CONNECTION_NAME
 from operator import itemgetter
 
 
@@ -20,11 +23,6 @@ try:
 except ImportError:
     Image = None
     ImageOps = None
-
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
 
 
 __all__ = ['StringField', 'IntField', 'FloatField', 'BooleanField',
@@ -49,10 +47,10 @@ class StringField(BaseField):
         super(StringField, self).__init__(**kwargs)
 
     def to_python(self, value):
-        return unicode(value)
+        return six.text_type(value)
 
     def validate(self, value):
-        if not isinstance(value, (str, unicode)):
+        if not isinstance(value, six.string_types):
             self.error('StringField only accepts string values')
 
         if self.max_length is not None and len(value) > self.max_length:
@@ -68,7 +66,7 @@ class StringField(BaseField):
         return None
 
     def prepare_query_value(self, op, value):
-        if not isinstance(op, basestring):
+        if not isinstance(op, six.string_types):
             return value
 
         if op.lstrip('i') in ('startswith', 'endswith', 'contains', 'exact'):
@@ -115,11 +113,10 @@ class URLField(StringField):
             self.error('Invalid URL: %s' % value)
 
         if self.verify_exists:
-            import urllib2
             try:
-                request = urllib2.Request(value)
-                urllib2.urlopen(request)
-            except Exception, e:
+                request = six.moves.urllib.request.Request(value)
+                six.moves.urllib.request.urlopen(request)
+            except Exception as e:
                 self.error('This URL appears to be a broken link: %s' % e)
 
 
@@ -205,20 +202,20 @@ class DecimalField(BaseField):
         super(DecimalField, self).__init__(**kwargs)
 
     def to_python(self, value):
-        if not isinstance(value, basestring):
-            value = unicode(value)
+        if not isinstance(value, six.string_types):
+            value = six.text_type(value)
         return decimal.Decimal(value)
 
     def to_mongo(self, value):
-        return unicode(value)
+        return six.text_type(value)
 
     def validate(self, value):
         if not isinstance(value, decimal.Decimal):
-            if not isinstance(value, basestring):
-                value = str(value)
+            if not isinstance(value, six.string_types):
+                value = six.text_type(value)
             try:
                 value = decimal.Decimal(value)
-            except Exception, exc:
+            except Exception as exc:
                 self.error('Could not convert value to decimal: %s' % exc)
 
         if self.min_value is not None and value < self.min_value:
@@ -356,7 +353,7 @@ class ComplexDateTimeField(StringField):
         datetime.datetime(2011, 6, 8, 20, 26, 24, 192284)
         """
         data = data.split(',')
-        data = map(int, data)
+        data = list(map(int, data))
         values = {}
         for i in range(7):
             values[self.names[i]] = data[i]
@@ -393,7 +390,7 @@ class EmbeddedDocumentField(BaseField):
     """
 
     def __init__(self, document_type, **kwargs):
-        if not isinstance(document_type, basestring):
+        if not isinstance(document_type, six.string_types):
             if not issubclass(document_type, EmbeddedDocument):
                 self.error('Invalid embedded document class provided to an '
                            'EmbeddedDocumentField')
@@ -402,7 +399,7 @@ class EmbeddedDocumentField(BaseField):
 
     @property
     def document_type(self):
-        if isinstance(self.document_type_obj, basestring):
+        if isinstance(self.document_type_obj, six.string_types):
             if self.document_type_obj == RECURSIVE_REFERENCE_CONSTANT:
                 self.document_type_obj = self.owner_document
             else:
@@ -487,14 +484,14 @@ class ListField(ComplexBaseField):
         """Make sure that a list of valid fields is being used.
         """
         if (not isinstance(value, (list, tuple, QuerySet)) or
-                isinstance(value, basestring)):
+                isinstance(value, six.string_types)):
             self.error('Only lists and tuples may be used in a list field')
         super(ListField, self).validate(value)
 
     def prepare_query_value(self, op, value):
         if self.field:
             if op in ('set', 'unset') \
-                    and (not isinstance(value, basestring) and
+                    and (not isinstance(value, six.string_types) and
                          hasattr(value, '__iter__')):
                 return [self.field.prepare_query_value(op, v) for v in value]
             return self.field.prepare_query_value(op, value)
@@ -520,9 +517,9 @@ class SortedListField(ListField):
     _order_reverse = False
 
     def __init__(self, field, **kwargs):
-        if 'ordering' in kwargs.keys():
+        if 'ordering' in kwargs:
             self._ordering = kwargs.pop('ordering')
-        if 'reverse' in kwargs.keys():
+        if 'reverse' in kwargs:
             self._order_reverse = kwargs.pop('reverse')
         super(SortedListField, self).__init__(field, **kwargs)
 
@@ -560,7 +557,7 @@ class DictField(ComplexBaseField):
         if not isinstance(value, dict):
             self.error('Only dictionaries may be used in a DictField')
 
-        if any(k for k in value.keys() if not isinstance(k, basestring)):
+        if any(k for k in value.keys() if not isinstance(k, six.string_types)):
             self.error(
                 'Invalid dictionary key - documents must have only string keys')
         if any(('.' in k or '$' in k) for k in value.keys()):
@@ -576,7 +573,7 @@ class DictField(ComplexBaseField):
                            'istartswith', 'endswith', 'iendswith',
                            'exact', 'iexact']
 
-        if op in match_operators and isinstance(value, basestring):
+        if op in match_operators and isinstance(value, six.string_types):
             return StringField().prepare_query_value(op, value)
 
         return super(DictField, self).prepare_query_value(op, value)
@@ -622,8 +619,8 @@ class ReferenceField(BaseField):
         :param reverse_delete_rule: Determines what to do when the referring
           object is deleted
         """
-        if not isinstance(document_type, basestring):
-            if not issubclass(document_type, (Document, basestring)):
+        if not isinstance(document_type, six.string_types):
+            if not issubclass(document_type, Document):
                 self.error('Argument to ReferenceField constructor must be a '
                            'document class or a string')
         self.document_type_obj = document_type
@@ -632,7 +629,7 @@ class ReferenceField(BaseField):
 
     @property
     def document_type(self):
-        if isinstance(self.document_type_obj, basestring):
+        if isinstance(self.document_type_obj, six.string_types):
             if self.document_type_obj == RECURSIVE_REFERENCE_CONSTANT:
                 self.document_type_obj = self.owner_document
             else:
@@ -768,12 +765,11 @@ class BinaryField(BaseField):
         return Binary(value)
 
     def to_python(self, value):
-        # Returns str not unicode as this is binary data
-        return str(value)
+        return six.binary_type(value)
 
     def validate(self, value):
-        if not isinstance(value, str):
-            self.error('BinaryField only accepts string values')
+        if not isinstance(value, six.binary_type):
+            self.error('BinaryField only accepts binary values')
 
         if self.max_bytes is not None and len(value) > self.max_bytes:
             self.error('Binary value is too long')
@@ -818,8 +814,10 @@ class GridFSProxy(object):
     def __get__(self, instance, value):
         return self
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.grid_id)
+
+    __nonzero__ = __bool__
 
     def __getstate__(self):
         self_dict = self.__dict__
@@ -933,7 +931,8 @@ class FileField(BaseField):
 
     def __set__(self, instance, value):
         key = self.name
-        if isinstance(value, file) or isinstance(value, str):
+        is_file = hasattr(value, 'read') and not isinstance(value, GridFSProxy)
+        if is_file or isinstance(value, six.string_types + (six.binary_type,)):
             # using "FileField() = file/string" notation
             grid_file = instance._data.get(self.name)
             # If a file already exists, delete it
@@ -1028,7 +1027,7 @@ class ImageGridFsProxy(GridFSProxy):
 
         w, h = img.size
 
-        io = StringIO()
+        io = six.BytesIO()
         img.save(io, img.format)
         io.seek(0)
 
@@ -1050,7 +1049,7 @@ class ImageGridFsProxy(GridFSProxy):
     def _put_thumbnail(self, thumbnail, format, **kwargs):
         w, h = thumbnail.size
 
-        io = StringIO()
+        io = six.BytesIO()
         thumbnail.save(io, format)
         io.seek(0)
 
@@ -1124,7 +1123,7 @@ class ImageField(FileField):
         for att_name, att in extra_args.items():
             if att and (isinstance(att, tuple) or isinstance(att, list)):
                 setattr(self, att_name, dict(
-                        map(None, params_size, att)))
+                        six.moves.zip_longest(params_size, att)))
             else:
                 setattr(self, att_name, None)
 
@@ -1226,18 +1225,18 @@ class UUIDField(BaseField):
         super(UUIDField, self).__init__(**kwargs)
 
     def to_python(self, value):
-        if not isinstance(value, basestring):
-            value = unicode(value)
+        if not isinstance(value, six.string_types):
+            value = six.text_type(value)
         return uuid.UUID(value)
 
     def to_mongo(self, value):
-        return unicode(value)
+        return six.text_type(value)
 
     def validate(self, value):
         if not isinstance(value, uuid.UUID):
-            if not isinstance(value, basestring):
-                value = str(value)
+            if not isinstance(value, six.string_types):
+                value = six.text_type(value)
             try:
                 value = uuid.UUID(value)
-            except Exception, exc:
+            except Exception as exc:
                 self.error('Could not convert to UUID: %s' % exc)

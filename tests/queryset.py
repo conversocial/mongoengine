@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 import pymongo
+import six
 from bson import ObjectId
 from datetime import datetime, timedelta
 
@@ -69,7 +70,8 @@ class QuerySetTest(unittest.TestCase):
         self.assertEqual(len(people), 2)
         results = list(people)
         self.assertTrue(isinstance(results[0], self.Person))
-        self.assertTrue(isinstance(results[0].id, (ObjectId, str, unicode)))
+        self.assertTrue(
+            isinstance(results[0].id, six.string_types + (ObjectId,)))
         self.assertEqual(results[0].name, "User A")
         self.assertEqual(results[0].age, 20)
         self.assertEqual(results[1].name, "User B")
@@ -78,7 +80,7 @@ class QuerySetTest(unittest.TestCase):
         # Use a query to filter the people found to just person1
         people = self.Person.objects(age=20)
         self.assertEqual(len(people), 1)
-        person = people.next()
+        person = next(people)
         self.assertEqual(person.name, "User A")
         self.assertEqual(person.age, 20)
 
@@ -121,7 +123,7 @@ class QuerySetTest(unittest.TestCase):
 
         # Test larger slice __repr__
         self.Person.objects.delete()
-        for i in xrange(55):
+        for i in range(55):
             self.Person(name='A%s' % i, age=i).save()
 
         self.assertEqual(len(self.Person.objects), 55)
@@ -254,12 +256,12 @@ class QuerySetTest(unittest.TestCase):
                                    write_options=write_options)
 
         author = self.Person.objects.first()
-        self.assertEquals(author.name, 'Ross')
+        self.assertEqual(author.name, 'Ross')
 
         self.Person.objects.update_one(set__name='Test User',
                                        write_options=write_options)
         author = self.Person.objects.first()
-        self.assertEquals(author.name, 'Test User')
+        self.assertEqual(author.name, 'Test User')
 
     def test_update_update_has_a_value(self):
         """Test to ensure that update is passed a value to update to"""
@@ -348,8 +350,8 @@ class QuerySetTest(unittest.TestCase):
         BlogPost.objects(comments__by="jane").update(inc__comments__S__votes=1)
 
         post = BlogPost.objects.first()
-        self.assertEquals(post.comments[1].by, 'jane')
-        self.assertEquals(post.comments[1].votes, 8)
+        self.assertEqual(post.comments[1].by, 'jane')
+        self.assertEqual(post.comments[1].votes, 8)
 
         # Currently the $ operator only applies to the first matched item in
         # the query
@@ -362,7 +364,7 @@ class QuerySetTest(unittest.TestCase):
         Simple.objects(x=2).update(inc__x__S=1)
 
         simple = Simple.objects.first()
-        self.assertEquals(simple.x, [1, 3, 3, 2])
+        self.assertEqual(simple.x, [1, 3, 3, 2])
         Simple.drop_collection()
 
         # You can set multiples
@@ -374,10 +376,10 @@ class QuerySetTest(unittest.TestCase):
         Simple.objects(x=3).update(set__x__S=0)
 
         s = Simple.objects()
-        self.assertEquals(s[0].x, [1, 2, 0, 4])
-        self.assertEquals(s[1].x, [2, 0, 4, 5])
-        self.assertEquals(s[2].x, [0, 4, 5, 6])
-        self.assertEquals(s[3].x, [4, 5, 6, 7])
+        self.assertEqual(s[0].x, [1, 2, 0, 4])
+        self.assertEqual(s[1].x, [2, 0, 4, 5])
+        self.assertEqual(s[2].x, [0, 4, 5, 6])
+        self.assertEqual(s[3].x, [4, 5, 6, 7])
 
         # Using "$unset" with an expression like this "array.$" will result in
         # the array item becoming None, not being removed.
@@ -385,14 +387,14 @@ class QuerySetTest(unittest.TestCase):
         Simple(x=[1, 2, 3, 4, 3, 2, 3, 4]).save()
         Simple.objects(x=3).update(unset__x__S=1)
         simple = Simple.objects.first()
-        self.assertEquals(simple.x, [1, 2, None, 4, 3, 2, 3, 4])
+        self.assertEqual(simple.x, [1, 2, None, 4, 3, 2, 3, 4])
 
         # Nested updates arent supported yet..
         def update_nested():
             Simple.drop_collection()
             Simple(x=[{'test': [1, 2, 3, 4]}]).save()
             Simple.objects(x__test=2).update(set__x__S__test__S=3)
-            self.assertEquals(simple.x, [1, 2, 3, 4])
+            self.assertEqual(simple.x, [1, 2, 3, 4])
 
         self.assertRaises(OperationError, update_nested)
         Simple.drop_collection()
@@ -423,8 +425,8 @@ class QuerySetTest(unittest.TestCase):
                 .update(set__comments__S__votes=Vote(score=4))
 
         post = BlogPost.objects.first()
-        self.assertEquals(post.comments[0].by, 'joe')
-        self.assertEquals(post.comments[0].votes.score, 4)
+        self.assertEqual(post.comments[0].by, 'joe')
+        self.assertEqual(post.comments[0].votes.score, 4)
 
     def test_mapfield_update(self):
         """Ensure that the MapField can be updated."""
@@ -525,7 +527,7 @@ class QuerySetTest(unittest.TestCase):
             post2 = Post(comments=[comment2, comment2])
 
             blogs = []
-            for i in xrange(1, 100):
+            for i in range(1, 100):
                 blogs.append(Blog(title="post %s" % i, posts=[post1, post2]))
 
             Blog.objects.insert(blogs, load_bulk=False)
@@ -578,7 +580,7 @@ class QuerySetTest(unittest.TestCase):
         Blog.drop_collection()
         blog1 = Blog(title="code", posts=[post1, post2])
         obj_id = Blog.objects.insert(blog1, load_bulk=False)
-        self.assertEquals(obj_id.__class__.__name__, 'ObjectId')
+        self.assertEqual(obj_id.__class__.__name__, 'ObjectId')
 
     def test_repeated_iteration(self):
         """Ensure that QuerySet rewinds itself one iteration finishes.
@@ -605,10 +607,10 @@ class QuerySetTest(unittest.TestCase):
         self.Person(name='Person 2').save()
 
         queryset = self.Person.objects
-        self.assertEquals('[<Person: Person object>, <Person: Person object>]',
+        self.assertEqual('[<Person: Person object>, <Person: Person object>]',
                           repr(queryset))
         for person in queryset:
-            self.assertEquals('.. queryset mid-iteration ..', repr(queryset))
+            self.assertEqual('.. queryset mid-iteration ..', repr(queryset))
 
     def test_regex_query_shortcuts(self):
         """Ensure that contains, startswith, endswith, etc work.
@@ -983,27 +985,27 @@ class QuerySetTest(unittest.TestCase):
 
         # first three
         numbers = Numbers.objects.fields(slice__n=3).get()
-        self.assertEquals(numbers.n, [0, 1, 2])
+        self.assertEqual(numbers.n, [0, 1, 2])
 
         # last three
         numbers = Numbers.objects.fields(slice__n=-3).get()
-        self.assertEquals(numbers.n, [-3, -2, -1])
+        self.assertEqual(numbers.n, [-3, -2, -1])
 
         # skip 2, limit 3
         numbers = Numbers.objects.fields(slice__n=[2, 3]).get()
-        self.assertEquals(numbers.n, [2, 3, 4])
+        self.assertEqual(numbers.n, [2, 3, 4])
 
         # skip to fifth from last, limit 4
         numbers = Numbers.objects.fields(slice__n=[-5, 4]).get()
-        self.assertEquals(numbers.n, [-5, -4, -3, -2])
+        self.assertEqual(numbers.n, [-5, -4, -3, -2])
 
         # skip to fifth from last, limit 10
         numbers = Numbers.objects.fields(slice__n=[-5, 10]).get()
-        self.assertEquals(numbers.n, [-5, -4, -3, -2, -1])
+        self.assertEqual(numbers.n, [-5, -4, -3, -2, -1])
 
         # skip to fifth from last, limit 10 dict method
         numbers = Numbers.objects.fields(n={"$slice": [-5, 10]}).get()
-        self.assertEquals(numbers.n, [-5, -4, -3, -2, -1])
+        self.assertEqual(numbers.n, [-5, -4, -3, -2, -1])
 
     def test_slicing_nested_fields(self):
         """Ensure that query slicing an embedded array works.
@@ -1024,27 +1026,27 @@ class QuerySetTest(unittest.TestCase):
 
         # first three
         numbers = Numbers.objects.fields(slice__embedded__n=3).get()
-        self.assertEquals(numbers.embedded.n, [0, 1, 2])
+        self.assertEqual(numbers.embedded.n, [0, 1, 2])
 
         # last three
         numbers = Numbers.objects.fields(slice__embedded__n=-3).get()
-        self.assertEquals(numbers.embedded.n, [-3, -2, -1])
+        self.assertEqual(numbers.embedded.n, [-3, -2, -1])
 
         # skip 2, limit 3
         numbers = Numbers.objects.fields(slice__embedded__n=[2, 3]).get()
-        self.assertEquals(numbers.embedded.n, [2, 3, 4])
+        self.assertEqual(numbers.embedded.n, [2, 3, 4])
 
         # skip to fifth from last, limit 4
         numbers = Numbers.objects.fields(slice__embedded__n=[-5, 4]).get()
-        self.assertEquals(numbers.embedded.n, [-5, -4, -3, -2])
+        self.assertEqual(numbers.embedded.n, [-5, -4, -3, -2])
 
         # skip to fifth from last, limit 10
         numbers = Numbers.objects.fields(slice__embedded__n=[-5, 10]).get()
-        self.assertEquals(numbers.embedded.n, [-5, -4, -3, -2, -1])
+        self.assertEqual(numbers.embedded.n, [-5, -4, -3, -2, -1])
 
         # skip to fifth from last, limit 10 dict method
         numbers = Numbers.objects.fields(embedded__n={"$slice": [-5, 10]}).get()
-        self.assertEquals(numbers.embedded.n, [-5, -4, -3, -2, -1])
+        self.assertEqual(numbers.embedded.n, [-5, -4, -3, -2, -1])
 
     def test_find_embedded(self):
         """Ensure that an embedded document is properly returned from a query.
@@ -1288,7 +1290,7 @@ class QuerySetTest(unittest.TestCase):
         # Test template style
         code = "{{~comments.content}}"
         sub_code = BlogPost.objects._sub_js_fields(code)
-        self.assertEquals("cmnts.body", sub_code)
+        self.assertEqual("cmnts.body", sub_code)
 
         BlogPost.drop_collection()
 
@@ -1513,7 +1515,7 @@ class QuerySetTest(unittest.TestCase):
 
         BlogPost.objects(slug="test-2").update_one(set__tags__0__name="python")
         post.reload()
-        self.assertEquals(post.tags[0].name, 'python')
+        self.assertEqual(post.tags[0].name, 'python')
 
         BlogPost.objects(slug="test-2").update_one(pop__tags=-1)
         post.reload()
@@ -1599,10 +1601,10 @@ class QuerySetTest(unittest.TestCase):
         results = list(results)
         self.assertEqual(len(results), 4)
 
-        music = filter(lambda r: r.key == "music", results)[0]
+        music = [r for r in results if r.key == "music"][0]
         self.assertEqual(music.value, 2)
 
-        film = filter(lambda r: r.key == "film", results)[0]
+        film = [r for r in results if r.key == "film"][0]
         self.assertEqual(film.value, 3)
 
         BlogPost.drop_collection()
@@ -1912,15 +1914,15 @@ class QuerySetTest(unittest.TestCase):
         Person(name="Wilson Jr").save()
 
         freq = Person.objects.item_frequencies('city')
-        self.assertEquals(freq, {'CRB': 1.0, None: 1.0})
+        self.assertEqual(freq, {'CRB': 1.0, None: 1.0})
         freq = Person.objects.item_frequencies('city', normalize=True)
-        self.assertEquals(freq, {'CRB': 0.5, None: 0.5})
+        self.assertEqual(freq, {'CRB': 0.5, None: 0.5})
 
         freq = Person.objects.item_frequencies('city', map_reduce=True)
-        self.assertEquals(freq, {'CRB': 1.0, None: 1.0})
+        self.assertEqual(freq, {'CRB': 1.0, None: 1.0})
         freq = Person.objects \
                      .item_frequencies('city', normalize=True, map_reduce=True)
-        self.assertEquals(freq, {'CRB': 0.5, None: 0.5})
+        self.assertEqual(freq, {'CRB': 0.5, None: 0.5})
 
     def test_item_frequencies_with_null_embedded(self):
         class Data(EmbeddedDocument):
@@ -1945,10 +1947,10 @@ class QuerySetTest(unittest.TestCase):
         p.save()
 
         ot = Person.objects.item_frequencies('extra.tag', map_reduce=False)
-        self.assertEquals(ot, {None: 1.0, u'friend': 1.0})
+        self.assertEqual(ot, {None: 1.0, 'friend': 1.0})
 
         ot = Person.objects.item_frequencies('extra.tag', map_reduce=True)
-        self.assertEquals(ot, {None: 1.0, u'friend': 1.0})
+        self.assertEqual(ot, {None: 1.0, 'friend': 1.0})
 
     def test_average(self):
         """Ensure that field can be averaged correctly.
@@ -2008,7 +2010,7 @@ class QuerySetTest(unittest.TestCase):
         foo = Foo(bar=bar)
         foo.save()
 
-        self.assertEquals(Foo.objects.distinct("bar"), [bar])
+        self.assertEqual(Foo.objects.distinct("bar"), [bar])
 
     def test_custom_manager(self):
         """Ensure that custom QuerySetManager instances work as expected.
@@ -2211,12 +2213,13 @@ class QuerySetTest(unittest.TestCase):
     def test_geospatial_operators(self):
         """Ensure that geospatial queries are working.
         """
+        @six.python_2_unicode_compatible
         class Event(Document):
             title = StringField()
             date = DateTimeField()
             location = GeoPointField()
 
-            def __unicode__(self):
+            def __str__(self):
                 return self.title
 
         Event.drop_collection()
@@ -2422,8 +2425,8 @@ class QuerySetTest(unittest.TestCase):
 
         Post().save()
         Post(is_published=True).save()
-        self.assertEquals(Post.objects.count(), 2)
-        self.assertEquals(Post.published.count(), 1)
+        self.assertEqual(Post.objects.count(), 2)
+        self.assertEqual(Post.published.count(), 1)
 
         Post.drop_collection()
 
@@ -2520,7 +2523,7 @@ class QuerySetTest(unittest.TestCase):
 
         Number.drop_collection()
 
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = Number(n=i)
             t.save()
 
@@ -2547,7 +2550,7 @@ class QuerySetTest(unittest.TestCase):
 
         Number.drop_collection()
 
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = Number(n=i)
             t.save()
 
@@ -2568,7 +2571,7 @@ class QuerySetTest(unittest.TestCase):
 
         Number.drop_collection()
 
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = Number(n=i)
             t.save()
 
@@ -2629,10 +2632,10 @@ class QuerySetTest(unittest.TestCase):
         Number(n=3).save()
 
         numbers = [n.n for n in Number.objects.order_by('-n')]
-        self.assertEquals([3, 2, 1], numbers)
+        self.assertEqual([3, 2, 1], numbers)
 
         numbers = [n.n for n in Number.objects.order_by('+n')]
-        self.assertEquals([1, 2, 3], numbers)
+        self.assertEqual([1, 2, 3], numbers)
         Number.drop_collection()
 
     def test_where(self):
@@ -2908,7 +2911,7 @@ class QuerySetTest(unittest.TestCase):
         # Use a query to filter the people found to just person1
         people = self.Person.objects(age=20).scalar('name')
         self.assertEqual(len(people), 1)
-        person = people.next()
+        person = next(people)
         self.assertEqual(person, "User A")
 
         # Test limit
@@ -2950,7 +2953,7 @@ class QuerySetTest(unittest.TestCase):
 
         # Test larger slice __repr__
         self.Person.objects.delete()
-        for i in xrange(55):
+        for i in range(55):
             self.Person(name='A%s' % i, age=i).save()
 
         self.assertEqual(len(self.Person.objects.scalar('name')), 55)
@@ -2961,10 +2964,10 @@ class QuerySetTest(unittest.TestCase):
             "A0",
             "%s" % self.Person.objects.scalar('name').order_by('name')[0])
         self.assertEqual(
-            "[u'A1', u'A2']",
+            six.text_type([u'A1', u'A2']),
             "%s" % self.Person.objects.order_by('age').scalar('name')[1:3])
         self.assertEqual(
-            "[u'A51', u'A52']",
+            six.text_type([u'A51', u'A52']),
             "%s" % self.Person.objects.order_by('age').scalar('name')[51:53])
 
         # with_id and in_bulk
@@ -2975,7 +2978,7 @@ class QuerySetTest(unittest.TestCase):
 
         pks = self.Person.objects.order_by('age').scalar('pk')[1:3]
         self.assertEqual(
-            "[u'A1', u'A2']",
+            six.text_type([u'A1', u'A2']),
             "%s" % sorted(
                 self.Person.objects.scalar('name').in_bulk(list(pks)).values()))
 
@@ -3022,7 +3025,7 @@ class QuerySetTest(unittest.TestCase):
 
         Number.drop_collection()
 
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = Number(n=i)
             t.save()
 
@@ -3145,7 +3148,7 @@ class QTest(unittest.TestCase):
         q2 = (Q(x__lt=100) | Q(y=True))
         query = (q1 & q2).to_query(TestDoc)
 
-        self.assertEqual(['$or'], query.keys())
+        self.assertEqual(['$or'], list(query.keys()))
         conditions = [
             {'x': {'$lt': 100, '$gt': 0}},
             {'x': {'$lt': 100, '$exists': False}},
@@ -3167,7 +3170,7 @@ class QTest(unittest.TestCase):
         q2 = (Q(x__lt=100) & (Q(y=False) | Q(y__exists=False)))
         query = (q1 | q2).to_query(TestDoc)
 
-        self.assertEqual(['$or'], query.keys())
+        self.assertEqual(['$or'], list(query.keys()))
         conditions = [
             {'x': {'$gt': 0}, 'y': True},
             {'x': {'$gt': 0}, 'y': {'$exists': False}},
@@ -3184,7 +3187,7 @@ class QTest(unittest.TestCase):
             x = IntField()
 
         TestDoc.drop_collection()
-        for i in xrange(1, 101):
+        for i in range(1, 101):
             t = TestDoc(x=i)
             t.save()
 

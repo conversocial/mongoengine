@@ -1,10 +1,13 @@
+from __future__ import absolute_import
+
+import six
 from bson import DBRef, SON
 
-from base import (BaseDict, BaseList, TopLevelDocumentMetaclass, get_document)
-from fields import (ReferenceField, ListField, DictField, MapField)
-from connection import get_db
-from queryset import QuerySet
-from document import Document
+from .base import (BaseDict, BaseList, TopLevelDocumentMetaclass, get_document)
+from .fields import (ReferenceField, ListField, DictField, MapField)
+from .connection import get_db
+from .queryset import QuerySet
+from .document import Document
 
 
 class DeReference(object):
@@ -22,7 +25,8 @@ class DeReference(object):
             :class:`~mongoengine.base.ComplexBaseField`
         :param get: A boolean determining if being called by __get__
         """
-        if items is None or isinstance(items, basestring):
+        if items is None or isinstance(
+                items, six.string_types + (six.binary_type,)):
             return items
 
         # cheapest way to convert a queryset to a list
@@ -57,16 +61,16 @@ class DeReference(object):
             return reference_map
 
         # Determine the iterator to use
-        if not hasattr(items, 'items'):
-            iterator = enumerate(items)
+        if isinstance(items, dict):
+            iterator = six.itervalues(items)
         else:
-            iterator = items.iteritems()
+            iterator = items
 
         # Recursively find dbreferences
         depth += 1
-        for k, item in iterator:
+        for item in iterator:
             if hasattr(item, '_fields'):
-                for field_name, field in item._fields.iteritems():
+                for field_name, field in six.iteritems(item._fields):
                     v = item._data.get(field_name, None)
                     if isinstance(v, (DBRef)):
                         reference_map.setdefault(field.document_type, []) \
@@ -79,7 +83,7 @@ class DeReference(object):
                         field_cls = getattr(getattr(field, 'field', None),
                                             'document_type', None)
                         references = self._find_references(v, depth)
-                        for key, refs in references.iteritems():
+                        for key, refs in six.iteritems(references):
                             if isinstance(
                                     field_cls,
                                     (Document, TopLevelDocumentMetaclass)):
@@ -93,7 +97,7 @@ class DeReference(object):
             elif isinstance(item, (dict, list, tuple)) and \
                     depth - 1 <= self.max_depth:
                 references = self._find_references(item, depth - 1)
-                for key, refs in references.iteritems():
+                for key, refs in six.iteritems(references):
                     reference_map.setdefault(key, []).extend(refs)
 
         return reference_map
@@ -102,17 +106,16 @@ class DeReference(object):
         """Fetch all references and convert to their document objects
         """
         object_map = {}
-        for col, dbrefs in self.reference_map.iteritems():
-            keys = object_map.keys()
-            refs = list(set(
-                [dbref for dbref in dbrefs if str(dbref) not in keys]))
+        for col, dbrefs in six.iteritems(self.reference_map):
+            keys = set(object_map.keys())
+            refs = list({dbref for dbref in dbrefs if str(dbref) not in keys})
             if hasattr(col, 'objects'):  # We have a document class for the refs
                 references = col.objects.in_bulk(refs)
-                for key, doc in references.iteritems():
+                for key, doc in six.iteritems(references):
                     object_map[key] = doc
             else:  # Generic reference: use the refs data to convert to document
                 if doc_type and \
-                        not isinstance(doc_type, (ListField, DictField, MapField,)):  # noqa
+                        not isinstance(doc_type, (ListField, DictField, MapField)):  # noqa
                     references = doc_type._get_db()[col].find(
                         {'_id': {'$in': refs}})
                     for ref in references:
@@ -157,14 +160,14 @@ class DeReference(object):
                 doc._data = self._attach_objects(doc._data, depth, doc, name)
                 return doc
 
-        if not hasattr(items, 'items'):
+        if isinstance(items, dict):
+            is_list = False
+            iterator = six.iteritems(items)
+            data = {}
+        else:
             is_list = True
             iterator = enumerate(items)
             data = []
-        else:
-            is_list = False
-            iterator = items.iteritems()
-            data = {}
 
         depth += 1
         for k, v in iterator:
@@ -176,7 +179,7 @@ class DeReference(object):
             if k in self.object_map:
                 data[k] = self.object_map[k]
             elif hasattr(v, '_fields'):
-                for field_name, field in v._fields.iteritems():
+                for field_name in six.iterkeys(v._fields):
                     v = data[k]._data.get(field_name, None)
                     if isinstance(v, (DBRef)):
                         data[k]._data[field_name] = self.object_map.get(v.id, v)

@@ -1,11 +1,13 @@
+from __future__ import absolute_import
+
 from django.contrib.sessions.backends.base import SessionBase, CreateError
 from django.core.exceptions import SuspiciousOperation
 from django.utils.encoding import force_unicode
 
-from mongoengine.document import Document
-from mongoengine import fields
-from mongoengine.queryset import OperationError
-from mongoengine.connection import DEFAULT_CONNECTION_NAME
+from ..document import Document
+from .. import fields
+from ..queryset import OperationError
+from ..connection import DEFAULT_CONNECTION_NAME
 from django.conf import settings
 from datetime import datetime
 
@@ -17,7 +19,7 @@ class MongoSession(Document):
     session_key = fields.StringField(primary_key=True, max_length=40)
     session_data = fields.StringField()
     expire_date = fields.DateTimeField()
-    
+
     meta = {'collection': 'django_session',
             'db_alias': MONGOENGINE_SESSION_DB_ALIAS,
             'allow_inheritance': False}

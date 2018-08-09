@@ -1,8 +1,10 @@
+from __future__ import absolute_import
+
 import os
 import itertools
-import urlparse
+from six.moves import urllib
 
-from mongoengine import *
+from .. import *
 from django.conf import settings
 from django.core.files.storage import Storage
 from django.core.exceptions import ImproperlyConfigured
@@ -70,7 +72,7 @@ class GridFSStorage(Storage):
         """
         if self.base_url is None:
             raise ValueError("This file is not accessible via a URL.")
-        return urlparse.urljoin(self.base_url, name).replace('\\', '/')
+        return urllib.parse.urljoin(self.base_url, name).replace('\\', '/')
 
     def _get_doc_with_name(self, name):
         """Find the documents in the store with the given name
@@ -100,7 +102,7 @@ class GridFSStorage(Storage):
         count = itertools.count(1)
         while self.exists(name):
             # file_ext includes the dot.
-            name = os.path.join("%s_%s%s" % (file_root, count.next(), file_ext))
+            name = os.path.join("%s_%s%s" % (file_root, next(count), file_ext))
 
         return name
 

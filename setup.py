@@ -20,9 +20,9 @@ def get_version(version_tuple):
 # import it as it depends on PyMongo and PyMongo isn't installed until this
 # file is read
 init = os.path.join(os.path.dirname(__file__), 'mongoengine', '__init__.py')
-version_line = filter(lambda l: l.startswith('VERSION'), open(init))[0]
+with open(init) as init_f:
+    version_line = [l for l in init_f if l.startswith('VERSION')][0]
 VERSION = get_version(eval(version_line.split('=')[-1]))
-print VERSION
 
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
@@ -48,6 +48,6 @@ setup(name='mongoengine',
       long_description=LONG_DESCRIPTION,
       platforms=['any'],
       classifiers=CLASSIFIERS,
-      install_requires=['pymongo==3.1', 'blinker==1.4'],
+      install_requires=['pymongo==3.1', 'blinker==1.4', 'six==1.11'],
       test_suite='tests',
-      tests_require=['django>=1.3,<=1.4.14', 'pillow'])
+      tests_require=['django>=1.8,<1.9rc', 'pillow'])

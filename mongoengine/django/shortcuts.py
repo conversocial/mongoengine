@@ -1,7 +1,9 @@
+from __future__ import absolute_import
+
 from django.http import Http404
-from mongoengine.queryset import QuerySet
-from mongoengine.base import BaseDocument
-from mongoengine.base import ValidationError
+from ..queryset import QuerySet
+from ..base import BaseDocument
+from ..base import ValidationError
 
 def _get_queryset(cls):
     """Inspired by django.shortcuts.*"""

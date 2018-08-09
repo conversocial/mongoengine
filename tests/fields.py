@@ -5,6 +5,7 @@ import uuid
 
 from decimal import Decimal
 
+import six
 from mongoengine import (
     connect, ValidationError,
     StringField, IntField, BooleanField, URLField, UUIDField,
@@ -127,7 +128,7 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(ret.int_fld, None)
         self.assertEqual(ret.flt_fld, None)
         # Return current time if retrived value is None.
-        self.assert_(isinstance(ret.comp_dt_fld, datetime.datetime))
+        self.assertTrue(isinstance(ret.comp_dt_fld, datetime.datetime))
 
         self.assertRaises(ValidationError, ret.validate)
 
@@ -322,8 +323,8 @@ class FieldTest(unittest.TestCase):
         LogEntry.drop_collection()
 
         # Post UTC - microseconds are rounded (down) nearest millisecond
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 999)
-        d2 = datetime.datetime(1970, 01, 01, 00, 00, 01)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 999)
+        d2 = datetime.datetime(1970, 1, 1, 0, 0, 1)
         log = LogEntry()
         log.date = d1
         log.save()
@@ -332,23 +333,24 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(log.date, d2)
 
         # Post UTC - microseconds are rounded (down) nearest millisecond
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 9999)
-        d2 = datetime.datetime(1970, 01, 01, 00, 00, 01, 9000)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 9999)
+        d2 = datetime.datetime(1970, 1, 1, 0, 0, 1, 9000)
         log.date = d1
         log.save()
         log.reload()
         self.assertNotEqual(log.date, d1)
         self.assertEqual(log.date, d2)
 
-        # Pre UTC dates microseconds below 1000 are dropped
-        # This does not seem to be true in PY3
-        d1 = datetime.datetime(1969, 12, 31, 23, 59, 59, 999)
-        d2 = datetime.datetime(1969, 12, 31, 23, 59, 59)
-        log.date = d1
-        log.save()
-        log.reload()
-        self.assertNotEqual(log.date, d1)
-        self.assertEqual(log.date, d2)
+        if not six.PY3:
+            # Pre UTC dates microseconds below 1000 are dropped
+            # This does not seem to be true in PY3
+            d1 = datetime.datetime(1969, 12, 31, 23, 59, 59, 999)
+            d2 = datetime.datetime(1969, 12, 31, 23, 59, 59)
+            log.date = d1
+            log.save()
+            log.reload()
+            self.assertNotEqual(log.date, d1)
+            self.assertEqual(log.date, d2)
 
         LogEntry.drop_collection()
 
@@ -363,20 +365,20 @@ class FieldTest(unittest.TestCase):
 
         # Post UTC - microseconds are rounded (down) nearest millisecond and
         # dropped - with default datetimefields
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 999)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 999)
         log = LogEntry()
         log.date = d1
         log.save()
         log.reload()
-        self.assertEquals(log.date, d1)
+        self.assertEqual(log.date, d1)
 
         # Post UTC - microseconds are rounded (down) nearest millisecond -
         # with default datetimefields
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 9999)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 9999)
         log.date = d1
         log.save()
         log.reload()
-        self.assertEquals(log.date, d1)
+        self.assertEqual(log.date, d1)
 
         # Pre UTC dates microseconds below 1000 are dropped -
         # with default datetimefields
@@ -384,17 +386,17 @@ class FieldTest(unittest.TestCase):
         log.date = d1
         log.save()
         log.reload()
-        self.assertEquals(log.date, d1)
+        self.assertEqual(log.date, d1)
 
         # Pre UTC microseconds above 1000 is wonky - with default datetimefields
         # log.date has an invalid microsecond value so I can't construct
         # a date to compare.
-        for i in xrange(1001, 3113, 33):
+        for i in range(1001, 3113, 33):
             d1 = datetime.datetime(1969, 12, 31, 23, 59, 59, i)
             log.date = d1
             log.save()
             log.reload()
-            self.assertEquals(log.date, d1)
+            self.assertEqual(log.date, d1)
             log1 = LogEntry.objects.get(date=d1)
             self.assertEqual(log, log1)
 
@@ -409,19 +411,19 @@ class FieldTest(unittest.TestCase):
 
         LogEntry.drop_collection()
 
-        d1 = datetime.datetime(1970, 01, 01, 00, 00, 01, 999)
+        d1 = datetime.datetime(1970, 1, 1, 0, 0, 1, 999)
         log = LogEntry()
         log.date = d1
         log.save()
 
         log1 = LogEntry.objects.get(date=d1)
-        self.assertEquals(log, log1)
+        self.assertEqual(log, log1)
 
         LogEntry.drop_collection()
 
         # create 60 log entries
-        for i in xrange(1950, 2010):
-            d = datetime.datetime(i, 01, 01, 00, 00, 01, 999)
+        for i in range(1950, 2010):
+            d = datetime.datetime(i, 1, 1, 0, 0, 1, 999)
             LogEntry(date=d).save()
 
         self.assertEqual(LogEntry.objects.count(), 60)
@@ -604,19 +606,19 @@ class FieldTest(unittest.TestCase):
         post.info = [{'test': 3}]
         post.save()
 
-        self.assertEquals(BlogPost.objects.count(), 3)
-        self.assertEquals(
+        self.assertEqual(BlogPost.objects.count(), 3)
+        self.assertEqual(
             BlogPost.objects.filter(info__exact='test').count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             BlogPost.objects.filter(info__0__test='test').count(),
             1)
 
         # Confirm handles non strings or non existing keys
-        self.assertEquals(
+        self.assertEqual(
             BlogPost.objects.filter(info__0__test__exact='5').count(),
             0)
-        self.assertEquals(
+        self.assertEqual(
             BlogPost.objects.filter(info__100__test__exact='test').count(),
             0)
         BlogPost.drop_collection()
@@ -633,7 +635,7 @@ class FieldTest(unittest.TestCase):
 
         foo = Foo(bars=[])
         foo.bars.append(bar)
-        self.assertEquals(repr(foo.bars), '[<Bar: Bar object>]')
+        self.assertEqual(repr(foo.bars), '[<Bar: Bar object>]')
 
     def test_list_field_strict(self):
         """Ensure that list field handles validation if provided a
@@ -719,34 +721,34 @@ class FieldTest(unittest.TestCase):
         Simple.objects.get(id=e.id)
 
         # Test querying
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__1__value=42).count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__2__number=1).count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__2__complex__value=42).count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__2__list__0__value=42).count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__2__list__1__value='foo').count(),
             1)
 
         # Confirm can update
         Simple.objects().update(set__mapping__1=IntegerSetting(value=10))
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__1__value=10).count(),
             1)
 
         Simple.objects().update(
             set__mapping__2__list__1=StringSetting(value='Boo'))
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__2__list__1__value='foo').count(),
             0)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__2__list__1__value='Boo').count(),
             1)
 
@@ -787,19 +789,19 @@ class FieldTest(unittest.TestCase):
         post.info = {'details': {'test': 3}}
         post.save()
 
-        self.assertEquals(BlogPost.objects.count(), 3)
-        self.assertEquals(
+        self.assertEqual(BlogPost.objects.count(), 3)
+        self.assertEqual(
             BlogPost.objects.filter(info__title__exact='test').count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             BlogPost.objects.filter(info__details__test__exact='test').count(),
             1)
 
         # Confirm handles non strings or non existing keys
-        self.assertEquals(
+        self.assertEqual(
             BlogPost.objects.filter(info__details__test__exact=5).count(),
             0)
-        self.assertEquals(
+        self.assertEqual(
             BlogPost.objects.filter(info__made_up__test__exact='test').count(),
             0)
 
@@ -807,7 +809,7 @@ class FieldTest(unittest.TestCase):
         post.info.update({'title': 'updated'})
         post.save()
         post.reload()
-        self.assertEquals('updated', post.info['title'])
+        self.assertEqual('updated', post.info['title'])
 
         BlogPost.drop_collection()
 
@@ -862,21 +864,21 @@ class FieldTest(unittest.TestCase):
         Simple.objects.get(id=e.id)
 
         # Test querying
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__someint__value=42).count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__nested_dict__number=1).count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__nested_dict__complex__value=42)
                           .count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__nested_dict__list__0__value=42)
                           .count(),
             1)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__nested_dict__list__1__value='foo')
                           .count(),
             1)
@@ -886,11 +888,11 @@ class FieldTest(unittest.TestCase):
             set__mapping={"someint": IntegerSetting(value=10)})
         Simple.objects().update(
             set__mapping__nested_dict__list__1=StringSetting(value='Boo'))
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__nested_dict__list__1__value='foo')
                           .count(),
             0)
-        self.assertEquals(
+        self.assertEqual(
             Simple.objects.filter(mapping__nested_dict__list__1__value='Boo')
                           .count(),
             1)
@@ -1314,7 +1316,7 @@ class FieldTest(unittest.TestCase):
         Person.drop_collection()
         Person(name="Wilson Jr").save()
 
-        self.assertEquals(repr(Person.objects(city=None)),
+        self.assertEqual(repr(Person.objects(city=None)),
                           "[<Person: Person object>]")
 
     def test_binary_fields(self):
@@ -1324,7 +1326,7 @@ class FieldTest(unittest.TestCase):
             content_type = StringField()
             blob = BinaryField()
 
-        BLOB = '\xe6\x00\xc4\xff\x07'
+        BLOB = b'\xe6\x00\xc4\xff\x07'
         MIME_TYPE = 'application/octet-stream'
 
         Attachment.drop_collection()
@@ -1361,12 +1363,13 @@ class FieldTest(unittest.TestCase):
 
         attachment_required = AttachmentRequired()
         self.assertRaises(ValidationError, attachment_required.validate)
-        attachment_required.blob = '\xe6\x00\xc4\xff\x07'
+        attachment_required.blob = b'\xe6\x00\xc4\xff\x07'
         attachment_required.validate()
 
-        attachment_size_limit = AttachmentSizeLimit(blob='\xe6\x00\xc4\xff\x07')
+        attachment_size_limit = AttachmentSizeLimit(
+            blob=b'\xe6\x00\xc4\xff\x07')
         self.assertRaises(ValidationError, attachment_size_limit.validate)
-        attachment_size_limit.blob = '\xe6\x00\xc4\xff'
+        attachment_size_limit.blob = b'\xe6\x00\xc4\xff'
         attachment_size_limit.validate()
 
         Attachment.drop_collection()
@@ -1492,8 +1495,8 @@ class FieldTest(unittest.TestCase):
         class SetFile(Document):
             file = FileField()
 
-        text = 'Hello, World!'
-        more_text = 'Foo Bar'
+        text = b'Hello, World!'
+        more_text = b'Foo Bar'
         content_type = 'text/plain'
 
         PutFile.drop_collection()
@@ -1506,8 +1509,8 @@ class FieldTest(unittest.TestCase):
         putfile.validate()
         result = PutFile.objects.first()
         self.assertTrue(putfile == result)
-        self.assertEquals(result.file.read(), text)
-        self.assertEquals(result.file.content_type, content_type)
+        self.assertEqual(result.file.read(), text)
+        self.assertEqual(result.file.content_type, content_type)
         result.file.delete()  # Remove file from GridFS
 
         streamfile = StreamFile()
@@ -1519,14 +1522,14 @@ class FieldTest(unittest.TestCase):
         streamfile.validate()
         result = StreamFile.objects.first()
         self.assertTrue(streamfile == result)
-        self.assertEquals(result.file.read(), text + more_text)
-        self.assertEquals(result.file.content_type, content_type)
+        self.assertEqual(result.file.read(), text + more_text)
+        self.assertEqual(result.file.content_type, content_type)
         result.file.seek(0)
-        self.assertEquals(result.file.tell(), 0)
-        self.assertEquals(result.file.read(len(text)), text)
-        self.assertEquals(result.file.tell(), len(text))
-        self.assertEquals(result.file.read(len(more_text)), more_text)
-        self.assertEquals(result.file.tell(), len(text + more_text))
+        self.assertEqual(result.file.tell(), 0)
+        self.assertEqual(result.file.read(len(text)), text)
+        self.assertEqual(result.file.tell(), len(text))
+        self.assertEqual(result.file.read(len(more_text)), more_text)
+        self.assertEqual(result.file.tell(), len(text + more_text))
         result.file.delete()
 
         # Ensure deleted file returns None
@@ -1538,7 +1541,7 @@ class FieldTest(unittest.TestCase):
         setfile.validate()
         result = SetFile.objects.first()
         self.assertTrue(setfile == result)
-        self.assertEquals(result.file.read(), text)
+        self.assertEqual(result.file.read(), text)
 
         # Try replacing file with new one
         result.file.replace(more_text)
@@ -1546,7 +1549,7 @@ class FieldTest(unittest.TestCase):
         result.validate()
         result = SetFile.objects.first()
         self.assertTrue(setfile == result)
-        self.assertEquals(result.file.read(), more_text)
+        self.assertEqual(result.file.read(), more_text)
         result.file.delete()
 
         PutFile.drop_collection()
@@ -1569,7 +1572,7 @@ class FieldTest(unittest.TestCase):
         # First instance
         testfile = TestFile()
         testfile.name = "Hello, World!"
-        testfile.file.put('Hello, World!')
+        testfile.file.put(b'Hello, World!')
         testfile.save()
 
         # Second instance
@@ -1589,7 +1592,7 @@ class FieldTest(unittest.TestCase):
 
         testfile = TestFile()
         self.assertFalse(bool(testfile.file))
-        testfile.file = 'Hello, World!'
+        testfile.file = b'Hello, World!'
         testfile.file.content_type = 'text/plain'
         testfile.save()
         self.assertTrue(bool(testfile.file))
@@ -1604,16 +1607,17 @@ class FieldTest(unittest.TestCase):
         TestImage.drop_collection()
 
         t = TestImage()
-        t.image.put(open(TEST_IMAGE_PATH, 'r'))
+        with open(TEST_IMAGE_PATH, 'rb') as f:
+            t.image.put(f)
         t.save()
 
         t = TestImage.objects.first()
 
-        self.assertEquals(t.image.format, 'PNG')
+        self.assertEqual(t.image.format, 'PNG')
 
         w, h = t.image.size
-        self.assertEquals(w, 371)
-        self.assertEquals(h, 76)
+        self.assertEqual(w, 371)
+        self.assertEqual(h, 76)
 
         t.image.delete()
 
@@ -1625,16 +1629,17 @@ class FieldTest(unittest.TestCase):
         TestImage.drop_collection()
 
         t = TestImage()
-        t.image.put(open(TEST_IMAGE_PATH, 'r'))
+        with open(TEST_IMAGE_PATH, 'rb') as f:
+            t.image.put(f)
         t.save()
 
         t = TestImage.objects.first()
 
-        self.assertEquals(t.image.format, 'PNG')
+        self.assertEqual(t.image.format, 'PNG')
         w, h = t.image.size
 
-        self.assertEquals(w, 185)
-        self.assertEquals(h, 37)
+        self.assertEqual(w, 185)
+        self.assertEqual(h, 37)
 
         t.image.delete()
 
@@ -1646,14 +1651,15 @@ class FieldTest(unittest.TestCase):
         TestImage.drop_collection()
 
         t = TestImage()
-        t.image.put(open(TEST_IMAGE_PATH, 'r'))
+        with open(TEST_IMAGE_PATH, 'rb') as f:
+            t.image.put(f)
         t.save()
 
         t = TestImage.objects.first()
 
-        self.assertEquals(t.image.thumbnail.format, 'PNG')
-        self.assertEquals(t.image.thumbnail.width, 92)
-        self.assertEquals(t.image.thumbnail.height, 18)
+        self.assertEqual(t.image.thumbnail.format, 'PNG')
+        self.assertEqual(t.image.thumbnail.width, 92)
+        self.assertEqual(t.image.thumbnail.height, 18)
 
         t.image.delete()
 
@@ -1675,16 +1681,16 @@ class FieldTest(unittest.TestCase):
         # First instance
         testfile = TestFile()
         testfile.name = "Hello, World!"
-        testfile.file.put('Hello, World!',
+        testfile.file.put(b'Hello, World!',
                           name="hello.txt")
         testfile.save()
 
         data = get_db("testfiles").macumba.files.find_one()
-        self.assertEquals(data.get('name'), 'hello.txt')
+        self.assertEqual(data.get('name'), 'hello.txt')
 
         testfile = TestFile.objects.first()
-        self.assertEquals(testfile.file.read(),
-                          'Hello, World!')
+        self.assertEqual(testfile.file.read(),
+                          b'Hello, World!')
 
     def test_ensure_unique_default_instances(self):
         """Ensure that every field has it's own unique default instance."""
@@ -1707,7 +1713,7 @@ class FieldTest(unittest.TestCase):
         self.db['mongoengine.counters'].drop()
         Person.drop_collection()
 
-        for x in xrange(10):
+        for x in range(10):
             p = Person(name="Person %s" % x)
             p.save()
 
@@ -1715,7 +1721,7 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(c['next'], 10)
 
         ids = [i.id for i in Person.objects]
-        self.assertEqual(ids, range(1, 11))
+        self.assertEqual(ids, list(range(1, 11)))
 
         c = self.db['mongoengine.counters'].find_one({'_id': 'person.id'})
         self.assertEqual(c['next'], 10)
@@ -1729,7 +1735,7 @@ class FieldTest(unittest.TestCase):
         self.db['mongoengine.counters'].drop()
         Person.drop_collection()
 
-        for x in xrange(10):
+        for x in range(10):
             p = Person(name="Person %s" % x)
             p.save()
 
@@ -1737,10 +1743,10 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(c['next'], 10)
 
         ids = [i.id for i in Person.objects]
-        self.assertEqual(ids, range(1, 11))
+        self.assertEqual(ids, list(range(1, 11)))
 
         counters = [i.counter for i in Person.objects]
-        self.assertEqual(counters, range(1, 11))
+        self.assertEqual(counters, list(range(1, 11)))
 
         c = self.db['mongoengine.counters'].find_one({'_id': 'person.id'})
         self.assertEqual(c['next'], 10)
@@ -1783,7 +1789,7 @@ class FieldTest(unittest.TestCase):
         Animal.drop_collection()
         Person.drop_collection()
 
-        for x in xrange(10):
+        for x in range(10):
             a = Animal(name="Animal %s" % x)
             a.save()
             p = Person(name="Person %s" % x)
@@ -1796,10 +1802,10 @@ class FieldTest(unittest.TestCase):
         self.assertEqual(c['next'], 10)
 
         ids = [i.id for i in Person.objects]
-        self.assertEqual(ids, range(1, 11))
+        self.assertEqual(ids, list(range(1, 11)))
 
         id = [i.id for i in Animal.objects]
-        self.assertEqual(id, range(1, 11))
+        self.assertEqual(id, list(range(1, 11)))
 
         c = self.db['mongoengine.counters'].find_one({'_id': 'person.id'})
         self.assertEqual(c['next'], 10)
@@ -1851,10 +1857,9 @@ class FieldTest(unittest.TestCase):
         post.comments.append(Comment(content='hello', author=bob))
         post.comments.append(Comment(author=bob))
 
-        try:
+        with self.assertRaises(ValidationError) as context:
             post.validate()
-        except ValidationError, error:
-            pass
+        error = context.exception
 
         # ValidationError.errors property
         self.assertTrue(hasattr(error, 'errors'))
@@ -1870,8 +1875,8 @@ class FieldTest(unittest.TestCase):
         self.assertTrue('comments' in error_dict)
         self.assertTrue(1 in error_dict['comments'])
         self.assertTrue('content' in error_dict['comments'][1])
-        self.assertEquals(error_dict['comments'][1]['content'],
-                          u'Field is required ("content")')
+        self.assertEqual(error_dict['comments'][1]['content'],
+                         u'Field is required ("content")')
 
         post.comments[1].content = 'here we go'
         post.validate()
@@ -1883,12 +1888,12 @@ class ValidatorErrorTest(unittest.TestCase):
         """Ensure a ValidationError handles error to_dict correctly.
         """
         error = ValidationError('root')
-        self.assertEquals(error.to_dict(), {})
+        self.assertEqual(error.to_dict(), {})
 
         # 1st level error schema
         error.errors = {'1st': ValidationError('bad 1st'), }
         self.assertTrue('1st' in error.to_dict())
-        self.assertEquals(error.to_dict()['1st'], 'bad 1st')
+        self.assertEqual(error.to_dict()['1st'], 'bad 1st')
 
         # 2nd level error schema
         error.errors = {'1st': ValidationError('bad 1st', errors={
@@ -1897,7 +1902,7 @@ class ValidatorErrorTest(unittest.TestCase):
         self.assertTrue('1st' in error.to_dict())
         self.assertTrue(isinstance(error.to_dict()['1st'], dict))
         self.assertTrue('2nd' in error.to_dict()['1st'])
-        self.assertEquals(error.to_dict()['1st']['2nd'], 'bad 2nd')
+        self.assertEqual(error.to_dict()['1st']['2nd'], 'bad 2nd')
 
         # moar levels
         error.errors = {'1st': ValidationError('bad 1st', errors={
@@ -1911,7 +1916,7 @@ class ValidatorErrorTest(unittest.TestCase):
         self.assertTrue('2nd' in error.to_dict()['1st'])
         self.assertTrue('3rd' in error.to_dict()['1st']['2nd'])
         self.assertTrue('4th' in error.to_dict()['1st']['2nd']['3rd'])
-        self.assertEquals(error.to_dict()['1st']['2nd']['3rd']['4th'],
+        self.assertEqual(error.to_dict()['1st']['2nd']['3rd']['4th'],
                           'Inception')
 
 

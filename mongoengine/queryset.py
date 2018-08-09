@@ -1,3 +1,5 @@
+from __future__ import absolute_import, division
+
 import pprint
 import re
 import copy
@@ -5,9 +7,11 @@ import itertools
 import operator
 
 import pymongo
+import six
 from bson.code import Code
 
-from mongoengine import signals
+from . import signals
+from functools import reduce
 
 __all__ = ['queryset_manager', 'Q', 'InvalidQueryError',
            'DO_NOTHING', 'NULLIFY', 'CASCADE', 'DENY']
@@ -316,11 +320,13 @@ class QueryFieldList(object):
         self.fields = set([])
         self.value = self.ONLY
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.fields)
 
+    __nonzero__ = __bool__
 
-class QuerySet(object):
+
+class QuerySet(six.Iterator):
     """A set of results returned from a query. Wraps a MongoDB cursor,
     providing :class:`~mongoengine.Document` objects as the results.
     """
@@ -400,7 +406,7 @@ class QuerySet(object):
     def _build_index_spec(cls, doc_cls, spec):
         """Build a PyMongo index spec from a MongoEngine index spec.
         """
-        if isinstance(spec, basestring):
+        if isinstance(spec, six.string_types):
             spec = {'fields': [spec]}
         if isinstance(spec, (list, tuple)):
             spec = {'fields': spec}
@@ -544,7 +550,7 @@ class QuerySet(object):
             if field_name.isdigit():
                 try:
                     new_field = field.field
-                except AttributeError, err:
+                except AttributeError as err:
                     raise InvalidQueryError(
                         "Can't use index on unsubscriptable field (%s)" % err)
                 fields.append(field_name)
@@ -557,19 +563,19 @@ class QuerySet(object):
                 if field_name in document._fields:
                     field = document._fields[field_name]
                 elif document._dynamic:
-                    from base import BaseDynamicField
+                    from .base import BaseDynamicField
                     field = BaseDynamicField(db_field=field_name)
                 else:
                     raise InvalidQueryError('Cannot resolve field "%s"'
                                             % field_name)
             else:
-                from mongoengine.fields import ReferenceField, GenericReferenceField  # noqa
+                from .fields import ReferenceField, GenericReferenceField  # noqa
                 if isinstance(field, (ReferenceField, GenericReferenceField)):
                     raise InvalidQueryError('Cannot perform join in mongoDB: %s'
                                             % '__'.join(parts))
                 # Look up subfield on the previous field
                 new_field = field.lookup_member(field_name)
-                from base import ComplexBaseField
+                from .base import ComplexBaseField
                 if not new_field and isinstance(field, ComplexBaseField):
                     fields.append(field_name)
                     continue
@@ -643,15 +649,14 @@ class QuerySet(object):
                 singular_ops = [None, 'ne', 'gt', 'gte', 'lt', 'lte', 'not']
                 singular_ops += match_operators
                 if op in singular_ops:
-                    if isinstance(field, basestring):
-                        if op in match_operators and isinstance(value,
-                                                                basestring):
-                            from mongoengine import StringField
-                            value = StringField.prepare_query_value(op, value)
-                        else:
-                            value = field
-                    else:
+                    if not isinstance(field, six.string_types):
                         value = field.prepare_query_value(op, value)
+                    elif op in match_operators and isinstance(
+                            value, six.string_types):
+                        from . import StringField
+                        value = StringField.prepare_query_value(op, value)
+                    else:
+                        value = field
                 elif op in ('in', 'nin', 'all', 'near'):
                     # 'in', 'nin' and 'all' require a list of values
                     value = [field.prepare_query_value(op, v) for v in value]
@@ -708,13 +713,13 @@ class QuerySet(object):
         self.limit(2)
         self.__call__(*q_objs, **query)
         try:
-            result1 = self.next()
+            result1 = next(self)
         except StopIteration:
             raise self._document.DoesNotExist(
                 "%s matching query does not exist."
                 % self._document._class_name)
         try:
-            self.next()
+            next(self)
         except StopIteration:
             return result1
 
@@ -788,7 +793,7 @@ class QuerySet(object):
 
         .. versionadded:: 0.5
         """
-        from document import Document
+        from .document import Document
 
         docs = doc_or_docs
         return_one = False
@@ -859,7 +864,7 @@ class QuerySet(object):
 
         return doc_map
 
-    def next(self):
+    def __next__(self):
         """Wrap the result in a :class:`~mongoengine.Document` object.
         """
         try:
@@ -867,9 +872,9 @@ class QuerySet(object):
                 raise StopIteration
             if self._scalar:
                 return self._get_scalar(self._document._from_son(
-                        self._cursor.next()))
-            return self._document._from_son(self._cursor.next())
-        except StopIteration, e:
+                        next(self._cursor)))
+            return self._document._from_son(next(self._cursor))
+        except StopIteration as e:
             self.rewind()
             raise e
 
@@ -928,7 +933,7 @@ class QuerySet(object):
 
         .. versionadded:: 0.3
         """
-        from document import MapReduceDocument
+        from .document import MapReduceDocument
 
         if not hasattr(self._collection, "map_reduce"):
             raise NotImplementedError("Requires MongoDB >= 1.7.1")
@@ -936,13 +941,13 @@ class QuerySet(object):
         map_f_scope = {}
         if isinstance(map_f, Code):
             map_f_scope = map_f.scope
-            map_f = unicode(map_f)
+            map_f = six.text_type(map_f)
         map_f = Code(self._sub_js_fields(map_f), map_f_scope)
 
         reduce_f_scope = {}
         if isinstance(reduce_f, Code):
             reduce_f_scope = reduce_f.scope
-            reduce_f = unicode(reduce_f)
+            reduce_f = six.text_type(reduce_f)
         reduce_f_code = self._sub_js_fields(reduce_f)
         reduce_f = Code(reduce_f_code, reduce_f_scope)
 
@@ -952,7 +957,7 @@ class QuerySet(object):
             finalize_f_scope = {}
             if isinstance(finalize_f, Code):
                 finalize_f_scope = finalize_f.scope
-                finalize_f = unicode(finalize_f)
+                finalize_f = six.text_type(finalize_f)
             finalize_f_code = self._sub_js_fields(finalize_f)
             finalize_f = Code(finalize_f_code, finalize_f_scope)
             mr_args['finalize'] = finalize_f
@@ -1055,7 +1060,7 @@ class QuerySet(object):
                 self._skip, self._limit = key.start, key.stop
                 if key.start and key.stop:
                     self._limit = key.stop - key.start
-            except IndexError, err:
+            except IndexError as err:
                 # PyMongo raises an error if key.start == key.stop, catch it,
                 # bin it, kill it.
                 start = key.start or 0
@@ -1083,7 +1088,7 @@ class QuerySet(object):
         .. versionadded:: 0.4
         .. versionchanged:: 0.5 - Fixed handling references
         """
-        from dereference import DeReference
+        from .dereference import DeReference
         return DeReference()(self._cursor.distinct(field), 1)
 
     def only(self, *fields):
@@ -1353,11 +1358,11 @@ class QuerySet(object):
                                           **write_options)
             if ret is not None and 'n' in ret:
                 return ret['n']
-        except pymongo.errors.OperationFailure, err:
-            if unicode(err) == u'multi not coded yet':
+        except pymongo.errors.OperationFailure as err:
+            if six.text_type(err) == u'multi not coded yet':
                 message = u'update() method requires MongoDB 1.1.3+'
                 raise OperationError(message)
-            raise OperationError(u'Update failed (%s)' % unicode(err))
+            raise OperationError(u'Update failed (%s)' % six.text_type(err))
 
     def update_one(self, w=1, upsert=False, write_options=None, **update):
         """Perform an atomic update on first field matched by the query.
@@ -1385,8 +1390,8 @@ class QuerySet(object):
 
             if ret is not None and 'n' in ret:
                 return ret['n']
-        except pymongo.errors.OperationFailure, e:
-            raise OperationError(u'Update failed [%s]' % unicode(e))
+        except pymongo.errors.OperationFailure as e:
+            raise OperationError(u'Update failed [%s]' % six.text_type(e))
 
     def __iter__(self):
         self.rewind()
@@ -1448,8 +1453,8 @@ class QuerySet(object):
             # Substitute the correct name for the field into the javascript
             return ".".join([f.db_field for f in fields])
 
-        code = re.sub(u'\[\s*~([A-z_][A-z_0-9.]+?)\s*\]', field_sub, code)
-        code = re.sub(u'\{\{\s*~([A-z_][A-z_0-9.]+?)\s*\}\}',
+        code = re.sub(r'\[\s*~([A-z_][A-z_0-9.]+?)\s*\]', field_sub, code)
+        code = re.sub(r'\{\{\s*~([A-z_][A-z_0-9.]+?)\s*\}\}',
                       field_path_sub, code)
         return code
 
@@ -1653,7 +1658,7 @@ class QuerySet(object):
 
         if normalize:
             count = sum(frequencies.values())
-            frequencies = dict([(k, v / count) for k, v in frequencies.items()])
+            frequencies = {k: v / count for k, v in frequencies.items()}
 
         return frequencies
 
@@ -1736,7 +1741,7 @@ class QuerySet(object):
 
         .. versionadded:: 0.5
         """
-        from dereference import DeReference
+        from .dereference import DeReference
         # Make select related work the same for querysets
         max_depth += 1
         return DeReference()(self, max_depth=max_depth)
@@ -1763,7 +1768,7 @@ class QuerySetManager(object):
         queryset_class = owner._meta['queryset_class'] or QuerySet
         queryset = queryset_class(owner, owner._get_collection())
         if self.get_queryset:
-            if self.get_queryset.func_code.co_argcount == 1:
+            if six.get_function_code(self.get_queryset).co_argcount == 1:
                 queryset = self.get_queryset(queryset)
             else:
                 queryset = self.get_queryset(owner, queryset)
@@ -1778,7 +1783,7 @@ def queryset_manager(func):
     function should return a :class:`~mongoengine.queryset.QuerySet`, probably
     the same one that was passed in, but modified in some way.
     """
-    if func.func_code.co_argcount == 1:
+    if six.get_function_code(func).co_argcount == 1:
         import warnings
         msg = 'Methods decorated with queryset_manager should take 2 arguments'
         warnings.warn(msg, DeprecationWarning)
