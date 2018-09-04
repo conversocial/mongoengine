@@ -2,10 +2,11 @@ import datetime
 import os
 import unittest
 import uuid
-
 from decimal import Decimal
 
 import six
+from bson import ObjectId
+
 from mongoengine import (
     connect, ValidationError,
     StringField, IntField, BooleanField, URLField, UUIDField,
@@ -13,6 +14,7 @@ from mongoengine import (
     FileField, ImageField, FloatField, DecimalField,
     ListField, MapField, DictField, SortedListField,
     SequenceField, ReferenceField, GenericReferenceField,
+    ObjectIdField,
     Document, EmbeddedDocument,
     EmbeddedDocumentField, GenericEmbeddedDocumentField)
 from mongoengine.connection import get_db, register_db
@@ -1375,6 +1377,66 @@ class FieldTest(unittest.TestCase):
         Attachment.drop_collection()
         AttachmentRequired.drop_collection()
         AttachmentSizeLimit.drop_collection()
+
+    def test_object_id_validation(self):
+        """Ensure that invalid values cannot be assigned to object id fields.
+        """
+        class TestDocument(Document):
+            oid_field = ObjectIdField()
+
+        TestDocument.drop_collection()
+
+        instance = TestDocument()
+        instance.validate()
+
+        instance.oid_field = ObjectId()
+        instance.validate()
+
+        expected_error = (
+            r' is not a valid ObjectId, it must be a 12-byte input '
+            r'or a 24-character hex string ')
+
+        instance.oid_field = 1
+        self.assertRaisesRegexp(
+            ValidationError, expected_error, instance.validate)
+
+        instance.oid_field = 'foo'
+        self.assertRaisesRegexp(
+            ValidationError, expected_error, instance.validate)
+
+        instance.oid_field = u'\u1234'
+        self.assertRaisesRegexp(
+            ValidationError, expected_error, instance.validate)
+
+    def test_object_id_serialisation(self):
+        """Ensure that invalid values cannot be saved to object id fields.
+        """
+        class TestDocument(Document):
+            oid_field = ObjectIdField()
+
+        TestDocument.drop_collection()
+
+        instance = TestDocument()
+        instance.save()
+
+        instance.oid_field = ObjectId()
+        instance.save()
+
+        expected_error = (
+            r' is not a valid ObjectId, it must be a 12-byte input '
+            r'or a 24-character hex string ')
+
+        instance.oid_field = 1
+        self.assertRaisesRegexp(
+            ValidationError, expected_error, instance.save, validate=False)
+
+        instance.oid_field = 'foo'
+        self.assertRaisesRegexp(
+            ValidationError, expected_error, instance.save, validate=False)
+
+        instance.oid_field = u'\u1234'
+        self.assertRaisesRegexp(
+            ValidationError, expected_error, instance.save, validate=False)
 
     def test_choices_validation(self):
         """Ensure that value is in a container of allowed values.
