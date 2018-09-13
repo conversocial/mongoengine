@@ -358,6 +358,7 @@ class QuerySet(six.Iterator):
         self._skip = None
         self._hint = -1  # Using -1 as None is a valid value for hint
         self._batch_size = None
+        self._no_cursor_timeout = None
 
     def clone(self):
         """Creates a copy of the current :class:`~mongoengine.queryset.QuerySet`
@@ -496,6 +497,8 @@ class QuerySet(six.Iterator):
 
         if self._loaded_fields:
             cursor_args['projection'] = self._loaded_fields.as_dict()
+        if self._no_cursor_timeout is not None:
+            cursor_args['no_cursor_timeout'] = self._no_cursor_timeout
         return cursor_args
 
     @property
@@ -1048,6 +1051,10 @@ class QuerySet(six.Iterator):
             self._cursor_obj.batch_size(size)
 
         self._batch_size = size
+        return self
+
+    def timeout(self, yes_timeout):
+        self._no_cursor_timeout = not yes_timeout
         return self
 
     def __getitem__(self, key):
