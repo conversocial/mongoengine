@@ -559,6 +559,27 @@ class DocumentTest(unittest.TestCase):
 
         Log.drop_collection()
 
+    def test_can_set_max_time_without_breaking_the_query(self):
+
+        class BlogPost(Document):
+            tags = ListField(StringField())
+
+        BlogPost.drop_collection()
+        BlogPost.objects._collection.ensure_index([('tags', pymongo.ASCENDING)])
+
+        for i in range(0, 10):
+            tags = [("tag %i" % n) for n in range(0, i % 2)]
+            BlogPost(tags=tags).save()
+
+        self.assertEqual(BlogPost.objects.count(), 10)
+        self.assertEqual(BlogPost.objects.timeout(False).count(), 10)
+        self.assertEqual(
+            BlogPost.objects.timeout(False).count(),
+            10)
+        self.assertEqual(
+            len(list(BlogPost.objects.timeout(False).all())),
+            10)
+
     def test_can_hint_without_breaking_the_query(self):
 
         class BlogPost(Document):
@@ -2697,6 +2718,13 @@ class ShardedDocumentTest(unittest.TestCase):
     def tearDown(self):
         self.ShardedPerson.drop_collection()
 
+    def is_sharded(self):
+        try:
+            str(get_db().command('listshards'))
+            return True
+        except:
+            return False
+
     def allow_tablescans(self, model):
         model.objects._collection.ensure_index([('_cls', pymongo.ASCENDING)],
                                                background=True)
@@ -2735,7 +2763,7 @@ class ShardedDocumentTest(unittest.TestCase):
                     collection.name, index, False)
                 return True
             if self.no_such_command(e):  # Not a mongos
-                return True
+                return False
             raise
 
     def ensure_sharding_enabled_on_database(self, database_name, connection):
@@ -2789,10 +2817,14 @@ class ShardedDocumentTest(unittest.TestCase):
                 collection_info))
 
     def test_fails_to_create_sharded_doc_without_shard_key(self):
-        person = self.ShardedPerson(name='jandres')
-        with self.assertRaises(OperationError) as cm:
-            person.save()
-        self.assertIn('does not contain shard key', str(cm.exception))
+        if self.is_sharded():
+            person = self.ShardedPerson(name='jandres')
+            with self.assertRaises(OperationError) as cm:
+                person.save()
+            self.assertIn('does not contain shard key', str(cm.exception))
+        else:
+            import sys
+            sys.stdout.write('Needs a mongo sharded server - skipped!\n')
 
     def test_reload_sharded(self):
         """Duplicate of test above with an actually sharded collection"""
