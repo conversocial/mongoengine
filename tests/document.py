@@ -466,6 +466,20 @@ class DocumentTest(unittest.TestCase):
         Person.drop_collection()
         self.assertFalse(collection in self.db.collection_names())
 
+    def test_non_capped_collections_no_created_on_query(self):
+        """Ensure that non capped (standard) collections are not created on
+        query.
+        """
+
+        self.Person.drop_collection()
+        self.assertFalse('person' in self.db.collection_names())
+
+        self.assertEqual(
+            list(self.Person.objects.filter(name="John")),
+            [])
+
+        self.assertFalse('person' in self.db.collection_names())
+
     def test_collection_name_and_primary(self):
         """Ensure that a collection with a specified name may be used.
         """
