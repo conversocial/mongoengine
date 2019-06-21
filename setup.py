@@ -48,6 +48,6 @@ setup(name='mongoengine',
       long_description=LONG_DESCRIPTION,
       platforms=['any'],
       classifiers=CLASSIFIERS,
-      install_requires=['pymongo==3.1', 'blinker==1.4', 'six==1.11'],
+      install_requires=['pymongo==3.6.1', 'blinker==1.4', 'six==1.11'],
       test_suite='tests',
       tests_require=['django>=1.8,<1.9rc', 'pillow'])
