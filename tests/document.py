@@ -631,6 +631,17 @@ class DocumentTest(unittest.TestCase):
         with self.assertRaises(pymongo.errors.OperationFailure):
             self.assertEqual(BlogPost.objects.hint([('ZZ', 1)]).count(), 10)
 
+    def test_default_id_field(self):
+        """Ensure that documents created without specifying an id field
+        are setup correctly.
+        """
+        class User(Document):
+            name = StringField()
+
+        self.assertEqual(User.id.name, 'id')
+        self.assertEqual(User.id.db_field, '_id')
+        self.assertEqual(User.id.primary_key, True)
+
     def test_custom_id_field(self):
         """Ensure that documents may be created with custom primary keys.
         """

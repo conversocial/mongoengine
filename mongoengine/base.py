@@ -769,9 +769,14 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
                     new_class.id = field
 
         if not new_class._meta['id_field']:
-            new_class._meta['id_field'] = 'id'
-            new_class._fields['id'] = ObjectIdField(db_field='_id')
-            new_class.id = new_class._fields['id']
+            id_name, id_db_field = ('id', '_id')
+            new_class._meta['id_field'] = id_name
+            new_class._fields[id_name] = ObjectIdField(db_field=id_db_field)
+            new_class._fields[id_name].name = id_name
+            new_class._fields[id_name].primary_key = True
+            new_class.id = new_class._fields[id_name]
+            new_class._db_field_map[id_name] = id_db_field
+            new_class._reverse_db_field_map[id_db_field] = id_name
 
         return new_class
 
