@@ -57,6 +57,17 @@ class QuerySetTest(unittest.TestCase):
         self.assertEqual(QuerySet._transform_query(name__exists=True),
                          {'name': {'$exists': True}})
 
+    def test_transform_update_push(self):
+        """Ensure the differences in behvaior between 'push' and 'push_all'"""
+        class BlogPost(Document):
+            tags = ListField(StringField())
+
+        update = QuerySet._transform_update(BlogPost, push__tags=['mongo', 'db'])
+        self.assertEqual(update, {'$push': {'tags': ['mongo', 'db']}})
+
+        update = QuerySet._transform_update(BlogPost, push_all__tags=['mongo', 'db'])
+        self.assertEqual(update, {'$push': {'tags': {'$each': ['mongo', 'db']}}})
+
     def test_find(self):
         """Ensure that a query returns a valid set of results.
         """
