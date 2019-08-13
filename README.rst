@@ -80,9 +80,11 @@ Some simple examples of what MongoEngine code looks like::
 
 Tests
 =====
-- Ensure you are running a local instance of MongoDB on the standard port
-- Ensure you have ``tox`` installed (``pip install tox``)
-- Run ``tox``
+- Ensure that you have Docker and docker-compose installed
+- Tests can then be run by ``docker-compose run test tox`` which will build
+  the test environment, Mongo and execute the tests.
+- If you are upgrading the version of mongo be sure to remove the ``mongo`` container
+  and rebuild it.
 
 Community
 =========
