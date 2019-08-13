@@ -18,7 +18,7 @@ class ConnectionTest(unittest.TestCase):
     def test_connect(self):
         """Ensure that the connect() method works properly.
         """
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
 
         conn = get_connection()
@@ -28,14 +28,14 @@ class ConnectionTest(unittest.TestCase):
         self.assertTrue(isinstance(db, pymongo.database.Database))
         self.assertEqual(db.name, 'mongoenginetest')
 
-        connect(alias='testdb')
+        connect(alias='testdb', host='mongo')
         conn = get_connection('testdb')
         self.assertTrue(isinstance(conn, pymongo.MongoClient))
 
     def test_connect_uri(self):
         """Ensure that the connect() method works properly with uri's
         """
-        c = connect(alias='admin')
+        c = connect(alias='admin', host='mongo')
         register_db('mongoenginetest', 'admin', 'admin')
         c.admin.system.users.remove({})
         c.mongoenginetest.system.users.remove({})
@@ -46,7 +46,7 @@ class ConnectionTest(unittest.TestCase):
 
         # Whilst database names can be specified in the URI, they are ignored
         # in mongoengine since the DB/connection split
-        connect(host='mongodb://username:password@localhost/mongoenginetest')
+        connect(host='mongodb://username:password@mongo/mongoenginetest')
         register_db('testdb_uri')
 
         conn = get_connection()

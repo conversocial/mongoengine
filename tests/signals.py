@@ -80,7 +80,7 @@ class ConnectSignalTests(BaseSignalTests):
 
     def test_already_connected(self):
         """ Repeat call to connect() should not fire the pre/post signals. """
-        connect()
+        connect(alias='default', host='mongo')
         self.assertEqual(self.get_signal_output(connect), [])
 
 
@@ -90,7 +90,7 @@ class DocumentSignalTests(BaseSignalTests):
     """
 
     def setUp(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
 
         @six.python_2_unicode_compatible

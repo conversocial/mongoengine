@@ -26,7 +26,7 @@ TEST_IMAGE_PATH = os.path.join(os.path.dirname(__file__), 'mongoengine.png')
 class FieldTest(unittest.TestCase):
 
     def setUp(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
         self.db = get_db()
 
@@ -1726,7 +1726,7 @@ class FieldTest(unittest.TestCase):
         t.image.delete()
 
     def test_file_multidb(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('testfiles', 'testfiles')
 
         class TestFile(Document):

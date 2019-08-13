@@ -23,7 +23,7 @@ from mongoengine.tests import query_counter
 class QuerySetTest(unittest.TestCase):
 
     def setUp(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
 
         class Person(Document):
@@ -3044,7 +3044,7 @@ class QuerySetTest(unittest.TestCase):
 class QTest(unittest.TestCase):
 
     def setUp(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
 
     def test_empty_q(self):
@@ -3068,7 +3068,7 @@ class QTest(unittest.TestCase):
 
     def test_q_with_dbref(self):
         """Ensure Q objects handle DBRefs correctly"""
-        connect(db='mongoenginetest')
+        connect(alias='default', host='mongo', db='mongoenginetest')
 
         class User(Document):
             pass
@@ -3266,7 +3266,7 @@ class QueryFieldListTest(unittest.TestCase):
         self.assertEqual(q.as_dict(), {'a': {"$slice": 5}})
 
     def test_elem_match(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
 
         class Foo(EmbeddedDocument):

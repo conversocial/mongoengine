@@ -12,7 +12,7 @@ from mongoengine.tests import query_counter
 class FieldTest(unittest.TestCase):
 
     def setUp(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
         self.db = get_db()
 
