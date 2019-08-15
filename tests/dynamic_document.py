@@ -10,7 +10,7 @@ from mongoengine.connection import get_db, register_db
 class DynamicDocTest(unittest.TestCase):
 
     def setUp(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
         self.db = get_db()
 

@@ -34,7 +34,7 @@ else:
 
 class QuerySetTest(unittest.TestCase):
     def setUp(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
 
         class Person(Document):

@@ -28,7 +28,7 @@ from mongoengine import signals
 class DocumentTest(unittest.TestCase):
 
     def setUp(self):
-        connect()
+        connect(alias='default', host='mongo')
         register_db('mongoenginetest')
         self.db = get_db()
 
@@ -613,7 +613,7 @@ class DocumentTest(unittest.TestCase):
             10)
 
     def test_hint_without_index_will_raise_if_mongo3(self):
-        connection = pymongo.MongoClient()
+        connection = pymongo.MongoClient("mongo:27017")
         mongo_version = connection.server_info()['version']
         if StrictVersion(mongo_version) < StrictVersion('3.0'):
             return

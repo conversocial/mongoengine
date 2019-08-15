@@ -1331,7 +1331,14 @@ class QuerySet(six.Iterator):
                 raise InvalidQueryError(
                     "Updates must supply an operation eg: set__FIELD=value")
 
-            value = {key: value}
+            if op == 'pushAll':
+                op = 'push'  # convert to non-deprecated keyword.
+                if not isinstance(value, (set, tuple, list)):
+                    value = [value]
+                value = {key: {'$each': value}}
+            else:
+                value = {key: value}
+
             key = '$' + op
             if key not in mongo_update:
                 mongo_update[key] = value

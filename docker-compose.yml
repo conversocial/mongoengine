@@ -1,0 +1,11 @@
+mongo:
+  hostname: mongo
+  image: mongo:4.0
+  command: --smallfiles
+
+test:
+  build: .
+  volumes:
+    - .:/mongoengine
+  links:
+    - mongo
