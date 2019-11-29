@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import random
 import unittest
 import pymongo
 import six
 from bson import ObjectId
 from datetime import datetime, timedelta
+from pymongo.errors import ExecutionTimeout
 
 from mongoengine.queryset import (QuerySet, QuerySetManager,
                                   MultipleObjectsReturned, DoesNotExist,
@@ -3050,6 +3052,28 @@ class QuerySetTest(unittest.TestCase):
         self.assertEqual(len(list(test)), 89)
 
         Number.drop_collection()
+
+    def test_max_time_ms(self):
+        class A(Document):
+            s = StringField()
+
+        A.drop_collection()
+
+        for _ in range(1000):
+            A.objects.create(s=str(random.randint(0, 1000)))
+
+        # sort to make the query longer
+        query = A.objects.max_time_ms(1).order_by('-s')
+
+        # test the timeout is raised
+        with self.assertRaises(ExecutionTimeout):
+            list(query)
+
+        # try again without timeout
+        try:
+            list(query.max_time_ms(None))
+        except ExecutionTimeout:
+            self.fail('ExecutionTimeout was raised')
 
 
 class QTest(unittest.TestCase):

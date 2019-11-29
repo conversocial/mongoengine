@@ -359,6 +359,7 @@ class QuerySet(six.Iterator):
         self._hint = -1  # Using -1 as None is a valid value for hint
         self._batch_size = None
         self._no_cursor_timeout = None
+        self._max_time_ms = None
 
     def clone(self):
         """Creates a copy of the current :class:`~mongoengine.queryset.QuerySet`
@@ -370,7 +371,7 @@ class QuerySet(six.Iterator):
         copy_props = ('_initial_query', '_query_obj', '_where_clause',
                       '_loaded_fields', '_ordering',
                       '_limit', '_skip',  '_hint', '_batch_size',
-                      '_read_preference',)
+                      '_read_preference', '_max_time_ms')
 
         for prop in copy_props:
             val = getattr(self, prop)
@@ -499,6 +500,8 @@ class QuerySet(six.Iterator):
             cursor_args['projection'] = self._loaded_fields.as_dict()
         if self._no_cursor_timeout is not None:
             cursor_args['no_cursor_timeout'] = self._no_cursor_timeout
+        if self._max_time_ms is not None:
+            cursor_args['max_time_ms'] = self._max_time_ms
         return cursor_args
 
     @property
@@ -1056,6 +1059,16 @@ class QuerySet(six.Iterator):
     def timeout(self, yes_timeout):
         self._no_cursor_timeout = not yes_timeout
         return self
+
+    def max_time_ms(self, ms):
+        """Wait `ms` milliseconds before killing the query on the server
+        :param ms: the number of milliseconds before killing the query on the server
+        """
+        queryset = self.clone()
+        queryset._max_time_ms = ms
+        if queryset._cursor_obj:
+            queryset._cursor_obj.max_time_ms(ms)
+        return queryset
 
     def __getitem__(self, key):
         """Support skip and limit using getitem and slicing syntax.
