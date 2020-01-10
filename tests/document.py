@@ -2601,6 +2601,18 @@ class DocumentTest(unittest.TestCase):
         self.assertEqual(AuthorBooks._get_collection(),
                          get_db("testdb-3")[AuthorBooks._get_collection_name()])
 
+    def test_db_alias_propagates(self):
+        """db_alias propagates?"""
+
+        class A(Document):
+            name = StringField()
+            meta = {"db_alias": "testdb-1", "allow_inheritance": True}
+
+        class B(A):
+            pass
+
+        self.assertEquals('testdb-1', B._meta.get('db_alias'))
+
     def test_db_ref_usage(self):
         """ DB Ref usage in __raw__ queries """
 

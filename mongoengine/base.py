@@ -692,9 +692,18 @@ class TopLevelDocumentMetaclass(DocumentMetaclass):
                     del(attrs['meta']['collection'])
                 if base._get_collection_name():
                     collection = base._get_collection_name()
-                # Propagate index options.
-                for key in ('index_background', 'index_drop_dups',
-                            'index_opts', 'shard_key'):
+
+                # Propagate inherited values.
+                keys_to_propogate = (
+                    'index_background',
+                    'index_drop_dups',
+                    'index_opts',
+                    'shard_key',
+                    'allow_inheritance',
+                    'queryset_class',
+                    'db_alias',
+                )
+                for key in keys_to_propogate:
                     if key in base._meta:
                         base_meta[key] = base._meta[key]
 
